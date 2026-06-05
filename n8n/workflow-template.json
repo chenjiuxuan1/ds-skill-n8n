@@ -1,0 +1,75 @@
+{
+  "name": "ds-scheduler-router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ds-scheduler",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "Webhook_1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "replace-with-your-webhook-id"
+    },
+    {
+      "parameters": {
+        "command": "python3 /opt/ds-scheduler/ds_scheduler_router.py",
+        "input": "={{ JSON.stringify($json) }}"
+      },
+      "id": "Execute_Command_1",
+      "name": "Execute Router",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.parse($json.stdout || '{}') }}",
+        "options": {}
+      },
+      "id": "Respond_1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Router": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
