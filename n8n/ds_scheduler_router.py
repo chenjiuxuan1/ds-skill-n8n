@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import json
 import os
@@ -14,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 
-COUNTRY_REPOS = {
+DEFAULT_COUNTRY_REPOS = {
     "cn": "/Users/jiangchuanchen/Desktop/CN-Intelligent-Alarm-Repair-Assistant",
     "ine": "/Users/jiangchuanchen/Desktop/INE-Intelligent-Alarm-Repair-Assistant",
     "mx": "/Users/jiangchuanchen/Desktop/MX-Intelligent-Alarm-Repair-Assistant",
@@ -23,16 +24,59 @@ COUNTRY_REPOS = {
     "th": "/Users/jiangchuanchen/Desktop/TH-Intelligent-Alarm-Repair-Assistant",
 }
 
+COUNTRY_REPO_NAMES = {
+    "cn": "CN-Intelligent-Alarm-Repair-Assistant",
+    "ine": "INE-Intelligent-Alarm-Repair-Assistant",
+    "mx": "MX-Intelligent-Alarm-Repair-Assistant",
+    "ph": "PH-Intelligent-Alarm-Repair-Assistant",
+    "pk": "PK-Intelligent-Alarm-Repair-Assistant",
+    "th": "TH-Intelligent-Alarm-Repair-Assistant",
+}
 
-def load_request() -> Dict[str, Any]:
-    raw = sys.stdin.read().strip()
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Route DS scheduler webhook requests")
+    parser.add_argument("--body", default="", help="Raw JSON request body")
+    parser.add_argument(
+        "--body-env",
+        default="",
+        help="Environment variable name that stores the raw JSON request body",
+    )
+    return parser.parse_args()
+
+
+def load_request(raw_body: str = "", body_env: str = "") -> Dict[str, Any]:
+    raw = raw_body.strip()
+    if not raw and body_env:
+        raw = os.environ.get(body_env, "").strip()
+    if not raw:
+        raw = sys.stdin.read().strip()
     if not raw:
         raise ValueError("empty request body")
     return json.loads(raw)
 
 
+def get_country_repos() -> Dict[str, str]:
+    repo_map = dict(DEFAULT_COUNTRY_REPOS)
+
+    repo_base = os.environ.get("DS_COUNTRY_REPO_BASE", "").strip()
+    if repo_base:
+        repo_map.update(
+            {
+                country: str(Path(repo_base) / repo_name)
+                for country, repo_name in COUNTRY_REPO_NAMES.items()
+            }
+        )
+
+    repo_map_json = os.environ.get("DS_COUNTRY_REPOS_JSON", "").strip()
+    if repo_map_json:
+        repo_map.update(json.loads(repo_map_json))
+
+    return repo_map
+
+
 def load_country_config(country: str) -> Dict[str, Any]:
-    repo = COUNTRY_REPOS.get(country)
+    repo = get_country_repos().get(country)
     if not repo:
         raise ValueError(f"unsupported country: {country}")
 
@@ -208,7 +252,8 @@ def response(success: bool, country: str, action: str, request_id: str, data: An
 
 def main() -> None:
     try:
-        request_data = load_request()
+        args = parse_args()
+        request_data = load_request(args.body, args.body_env)
         print(json.dumps(route_action(request_data), ensure_ascii=False))
     except Exception as exc:
         print(

@@ -50,13 +50,23 @@ python3 scripts/build_ds_webhook_payload.py \
 
 ### 2. n8n 侧执行
 
-n8n 可以用 `Execute Command` 节点调用：
+n8n 建议使用 `Execute Command` 节点直接调用：
 
 ```bash
-python3 /path/to/ds_scheduler_router.py
+cd /root/ds-skill-n8n && DS_COUNTRY_REPO_BASE=/root python3 n8n/ds_scheduler_router.py --body '{{ JSON.stringify($json.body) }}'
 ```
 
-把 webhook 收到的原始 JSON 作为标准输入传给它。
+如果你的节点更适合走环境变量，也可以改成：
+
+```bash
+cd /root/ds-skill-n8n && DS_COUNTRY_REPO_BASE=/root DS_WEBHOOK_BODY='{{ JSON.stringify($json.body) }}' python3 n8n/ds_scheduler_router.py --body-env DS_WEBHOOK_BODY
+```
+
+这里的 `DS_COUNTRY_REPO_BASE=/root` 表示 6 个国家仓库都放在 `/root` 下面，例如：
+
+- `/root/CN-Intelligent-Alarm-Repair-Assistant`
+- `/root/PH-Intelligent-Alarm-Repair-Assistant`
+- `/root/TH-Intelligent-Alarm-Repair-Assistant`
 
 ## 依赖
 
