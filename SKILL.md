@@ -1,81 +1,47 @@
 ---
 name: ds-scheduler
-description: Route multi-country DolphinScheduler 3.4 workflow operations through an n8n webhook using standardized country-aware payloads, curl commands, and operator guidance. Use when users want to query, trigger, online, offline, or inspect DS workflows or instances for cn, ine, mx, ph, pk, or th.
+description: Use the n8n-based DolphinScheduler gateway to inspect and operate multi-country DS 3.4 workflows and instances for cn, ine, mx, ph, pk, and th. Use when the user wants Codex to build or send standardized n8n webhook requests for listing projects/workflows, reading workflow or instance details, online/offline, trigger, dumping workflow DAG structure, or appending SQL/SHELL tasks through the country jump-host gateway.
 ---
 
 # DS Scheduler
 
-用于把 Codex 侧的调度操作请求，转换成标准化的 n8n webhook 请求。
+把 Codex 侧的调度请求，转换成标准化的 n8n webhook 调用，并通过各国跳板机上的 `ds-scheduler-gateway` 执行实际 DS API 操作。
 
 ## 何时使用
 
 适用：
-- 用户要操作 `CN / INE / MX / PH / PK / TH` 的 DS 调度
-- 用户要做 `查询 / 上线 / 下线 / 触发 / 实例查询`
-- 用户希望由 Codex 生成标准请求体、`curl` 命令和调用说明
+- 用户要通过 n8n 中转访问 DolphinScheduler 3.4
+- 用户要操作 `cn / ine / mx / ph / pk / th`
+- 用户要做：
+  - `list_projects`
+  - `list_workflows`
+  - `get_workflow`
+  - `online_workflow`
+  - `offline_workflow`
+  - `trigger_workflow`
+  - `list_instances`
+  - `get_instance`
+  - `dump_workflow_graph`
+  - `append_task`
+  - `append_sql_task`
+  - `append_shell_task`
 
-不适用：
-- 用户要直接从 Codex 调用 DS 内网 API
-- 用户要第二版能力：完整新建/更新 workflow definition
+## 当前架构
 
-## 第一版动作
+`Codex -> n8n Webhook -> 请求标准化 -> If(valid) -> 按国家分流 -> 各国 Execute Command -> 内容解析 -> Respond to Webhook`
 
-- `list_workflows`
-- `get_workflow`
-- `online_workflow`
-- `offline_workflow`
-- `trigger_workflow`
-- `list_instances`
-- `get_instance`
+## 关键点
 
-## 必要输入
+- `ds_token` 必须由用户提供
+- n8n 只做中转，不扩大权限
+- 各国节点统一执行 `/root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py`
+- `append_task` 是通用追加入口
+- `append_sql_task` / `append_shell_task` 是特化入口
 
-最少要确认：
-- `country`：`cn / ine / mx / ph / pk / th`
-- `action`
-- `ds_token`
+## 参考
 
-按动作补充：
-- `workflow_code`
-- `instance_id`
-- `project_code`（可选，允许覆盖国家默认项目）
-- `custom_params`
-- `page_no / page_size / search_val / state_type`
+- 协议与字段：[REFERENCE.md](REFERENCE.md)
+- 示例：[EXAMPLES.md](EXAMPLES.md)
+- n8n 节点说明：[n8n/README.md](n8n/README.md)
+- 请求构造脚本：[scripts/build_ds_webhook_payload.py](scripts/build_ds_webhook_payload.py)
 
-## 工作流
-
-1. 识别国家和动作
-2. 校验动作所需字段
-3. 生成标准 webhook payload
-4. 生成可执行 `curl`
-5. 说明哪些字段来自用户、哪些字段会由 n8n 补全
-
-## 输出要求
-
-默认输出：
-- 识别结果：国家、动作
-- 标准 JSON payload
-- 可执行 `curl`
-- 参数说明
-
-如果 webhook 当前不可直接访问：
-- 仍然输出 payload 和 `curl`
-- 明确提示“需要在可达 n8n 的环境执行”
-
-## 标准 webhook 契约
-
-见 [REFERENCE.md](REFERENCE.md)
-
-## 常见示例
-
-见 [EXAMPLES.md](EXAMPLES.md)
-
-## 辅助脚本
-
-使用 [scripts/build_ds_webhook_payload.py](scripts/build_ds_webhook_payload.py) 生成标准 payload 与 `curl`。
-
-## n8n 落地
-
-n8n 侧路由模板与说明见：
-- [n8n/README.md](n8n/README.md)
-- [n8n/ds_scheduler_router.py](n8n/ds_scheduler_router.py)

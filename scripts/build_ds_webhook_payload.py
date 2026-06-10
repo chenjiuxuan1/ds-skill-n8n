@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 COUNTRIES = {"cn", "ine", "mx", "ph", "pk", "th"}
 ACTIONS = {
+    "list_projects",
     "list_workflows",
     "get_workflow",
     "online_workflow",
@@ -19,6 +20,10 @@ ACTIONS = {
     "trigger_workflow",
     "list_instances",
     "get_instance",
+    "append_task",
+    "append_sql_task",
+    "append_shell_task",
+    "dump_workflow_graph",
 }
 
 
@@ -33,17 +38,42 @@ def _require(condition: bool, message: str) -> None:
         raise SystemExit(message)
 
 
+def _normalize_task_type(task_type: str | None, action: str) -> str:
+    if action == "append_sql_task":
+        return "SQL"
+    if action == "append_shell_task":
+        return "SHELL"
+    if not task_type:
+        return ""
+    normalized = task_type.strip().upper()
+    aliases = {"SQL": "SQL", "SHELL": "SHELL", "SCRIPT": "SHELL", "COMMAND": "SHELL"}
+    return aliases.get(normalized, normalized)
+
+
 def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
     _require(args.country in COUNTRIES, f"Unsupported country: {args.country}")
     _require(args.action in ACTIONS, f"Unsupported action: {args.action}")
     _require(bool(args.ds_token), "ds_token is required")
 
-    if args.action in {"online_workflow", "offline_workflow", "trigger_workflow"}:
+    task_type = _normalize_task_type(args.task_type, args.action)
+
+    if args.action in {"online_workflow", "offline_workflow", "trigger_workflow", "dump_workflow_graph"}:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
     if args.action == "get_workflow":
         _require(bool(args.workflow_code or args.workflow_name), "get_workflow requires --workflow-code or --workflow-name")
+    if args.action in {"append_task", "append_sql_task", "append_shell_task"}:
+        _require(bool(args.project_code), f"{args.action} requires --project-code")
+        _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
+        _require(bool(args.task_name), f"{args.action} requires --task-name")
+        if args.action == "append_task":
+            _require(bool(task_type), "append_task requires --task-type")
+        _require(bool(task_type in {"SQL", "SHELL"}), f"unsupported task_type: {task_type}")
+        if task_type == "SQL":
+            _require(bool(args.sql), f"{args.action} requires --sql for SQL task")
+        if task_type == "SHELL":
+            _require(bool(args.script), f"{args.action} requires --script for SHELL task")
 
     payload = {
         "source": "codex-skill",
@@ -65,6 +95,30 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "custom_params": _load_json(args.custom_params_json, {}),
         },
     }
+
+    extra = payload["payload"]
+    if args.action in {"append_task", "append_sql_task", "append_shell_task"}:
+        extra.update(
+            {
+                "task_type": task_type,
+                "task_name": args.task_name or "",
+                "task_description": args.task_description or "",
+                "template_task_name": args.template_task_name or "",
+                "sql": args.sql or "",
+                "script": args.script or "",
+                "sql_type": args.sql_type if args.sql_type is not None else "",
+                "datasource": args.datasource or "",
+                "environment_code": args.environment_code or "",
+                "tenant_code": args.tenant_code or "",
+                "upstream_task_name": args.upstream_task_name or "",
+                "upstream_task_code": args.upstream_task_code or "",
+            }
+        )
+        if args.restore_original_state is not None:
+            extra["restore_original_state"] = args.restore_original_state
+        if args.auto_offline is not None:
+            extra["auto_offline"] = args.auto_offline
+
     return payload
 
 
@@ -95,6 +149,20 @@ def main() -> None:
     parser.add_argument("--page-no", type=int, default=1)
     parser.add_argument("--page-size", type=int, default=20)
     parser.add_argument("--custom-params-json")
+    parser.add_argument("--task-type")
+    parser.add_argument("--task-name")
+    parser.add_argument("--task-description")
+    parser.add_argument("--template-task-name")
+    parser.add_argument("--sql")
+    parser.add_argument("--script")
+    parser.add_argument("--sql-type")
+    parser.add_argument("--datasource")
+    parser.add_argument("--environment-code")
+    parser.add_argument("--tenant-code")
+    parser.add_argument("--upstream-task-name")
+    parser.add_argument("--upstream-task-code")
+    parser.add_argument("--restore-original-state", action="store_const", const=True, default=None)
+    parser.add_argument("--auto-offline", action="store_const", const=True, default=None)
     args = parser.parse_args()
 
     payload = build_payload(args)

@@ -2,102 +2,90 @@
 
 ## 国家代码
 
-| 国家 | code | 本地仓库 |
-|---|---|---|
-| 中国 | `cn` | `/Users/jiangchuanchen/Desktop/CN-Intelligent-Alarm-Repair-Assistant` |
-| 印尼 | `ine` | `/Users/jiangchuanchen/Desktop/INE-Intelligent-Alarm-Repair-Assistant` |
-| 墨西哥 | `mx` | `/Users/jiangchuanchen/Desktop/MX-Intelligent-Alarm-Repair-Assistant` |
-| 菲律宾 | `ph` | `/Users/jiangchuanchen/Desktop/PH-Intelligent-Alarm-Repair-Assistant` |
-| 巴基斯坦 | `pk` | `/Users/jiangchuanchen/Desktop/PK-Intelligent-Alarm-Repair-Assistant` |
-| 泰国 | `th` | `/Users/jiangchuanchen/Desktop/TH-Intelligent-Alarm-Repair-Assistant` |
+| 国家 | code |
+|---|---|
+| 中国 | `cn` |
+| 印尼 | `ine` |
+| 墨西哥 | `mx` |
+| 菲律宾 | `ph` |
+| 巴基斯坦 | `pk` |
+| 泰国 | `th` |
 
-## 标准请求体
+## 当前支持动作
+
+- `list_projects`
+- `list_workflows`
+- `get_workflow`
+- `online_workflow`
+- `offline_workflow`
+- `trigger_workflow`
+- `list_instances`
+- `get_instance`
+- `append_task`
+- `append_sql_task`
+- `append_shell_task`
+- `dump_workflow_graph`
+
+## 标准 webhook body
 
 ```json
 {
   "source": "codex-skill",
-  "country": "cn",
-  "action": "trigger_workflow",
+  "country": "mx",
+  "action": "append_task",
   "ds_token": "user-provided-token",
-  "request_id": "20260605-001",
+  "request_id": "20260610-001",
   "payload": {
-    "project_code": "158514956085248",
-    "workflow_code": "158515019593728",
-    "instance_id": "",
-    "workflow_name": "",
-    "start_node_list": "",
-    "schedule_time": "",
-    "state_type": "",
-    "search_val": "",
-    "page_no": 1,
-    "page_size": 20,
-    "custom_params": {}
+    "project_code": "13068695921632",
+    "workflow_code": "174599383687393",
+    "task_type": "SQL",
+    "task_name": "测试2",
+    "template_task_name": "dwd_okr_dashboard_wide_app",
+    "sql": "select 2"
   }
 }
 ```
 
-## 动作与参数
+## 任务追加动作
 
-### `list_workflows`
-
-可选：
-- `project_code`
-- `page_no`
-- `page_size`
-- `search_val`
-
-### `get_workflow`
-
-必填其一：
-- `workflow_code`
-- `workflow_name`
-
-可选：
-- `project_code`
-
-### `online_workflow`
+### `append_task`
 
 必填：
+- `project_code`
 - `workflow_code`
+- `task_type`
+- `task_name`
+- `template_task_name`
+
+按任务类型补充：
+- SQL:
+  - `sql`
+- SHELL:
+  - `script`
 
 可选：
-- `project_code`
+- `sql_type`
+- `task_description`
+- `datasource`
+- `environment_code`
+- `tenant_code`
+- `upstream_task_name`
+- `upstream_task_code`
+- `restore_original_state`
+- `auto_offline`
 
-### `offline_workflow`
+### `append_sql_task`
 
-必填：
-- `workflow_code`
+等价于 `append_task + task_type=SQL`
 
-可选：
-- `project_code`
+### `append_shell_task`
 
-### `trigger_workflow`
+等价于 `append_task + task_type=SHELL`
 
-必填：
-- `workflow_code`
+## `sql_type` 兼容
 
-可选：
-- `project_code`
-- `start_node_list`
-- `schedule_time`
-- `custom_params`
-
-### `list_instances`
-
-可选：
-- `project_code`
-- `state_type`
-- `page_no`
-- `page_size`
-- `search_val`
-
-### `get_instance`
-
-必填：
-- `instance_id`
-
-可选：
-- `project_code`
+- 查询型：`0 / query / select / read`
+- 执行型：`1 / non_query / non-query / update / write / execute`
 
 ## 返回格式
 
@@ -106,9 +94,9 @@
 ```json
 {
   "success": true,
-  "country": "cn",
-  "action": "trigger_workflow",
-  "request_id": "20260605-001",
+  "country": "mx",
+  "action": "dump_workflow_graph",
+  "request_id": "mx-001",
   "data": {},
   "error": null
 }
@@ -119,31 +107,14 @@
 ```json
 {
   "success": false,
-  "country": "cn",
-  "action": "offline_workflow",
-  "request_id": "20260605-002",
+  "country": "mx",
+  "action": "append_task",
+  "request_id": "mx-002",
   "data": null,
   "error": {
-    "code": "DS_API_ERROR",
-    "message": "workflow not found"
+    "code": "INVALID_REQUEST",
+    "message": "unsupported action: append_task"
   }
 }
 ```
 
-## 安全边界
-
-- `ds_token` 必须由用户提供
-- n8n 不扩大 token 权限，只用它访问 DS
-- 国家默认配置仅补足：
-  - `base_url`
-  - `project_code`
-  - `environment_code`
-  - `tenant_code`
-
-## 第一版不做
-
-- `create_workflow`
-- `update_workflow`
-- workflow JSON 结构生成
-- 资源文件自动上传
-- 跨国家批量写操作
