@@ -23,6 +23,7 @@ ACTIONS = {
     "append_task",
     "append_sql_task",
     "append_shell_task",
+    "delete_task",
     "dump_workflow_graph",
 }
 
@@ -74,6 +75,10 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             _require(bool(args.sql), f"{args.action} requires --sql for SQL task")
         if task_type == "SHELL":
             _require(bool(args.script), f"{args.action} requires --script for SHELL task")
+    if args.action == "delete_task":
+        _require(bool(args.project_code), "delete_task requires --project-code")
+        _require(bool(args.workflow_code), "delete_task requires --workflow-code")
+        _require(bool(args.task_name or args.task_code), "delete_task requires --task-name or --task-code")
 
     payload = {
         "source": "codex-skill",
@@ -110,8 +115,21 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "datasource": args.datasource or "",
                 "environment_code": args.environment_code or "",
                 "tenant_code": args.tenant_code or "",
-                "upstream_task_name": args.upstream_task_name or "",
-                "upstream_task_code": args.upstream_task_code or "",
+            "upstream_task_name": args.upstream_task_name or "",
+            "upstream_task_code": args.upstream_task_code or "",
+            "task_code": args.task_code or "",
+        }
+        )
+        if args.restore_original_state is not None:
+            extra["restore_original_state"] = args.restore_original_state
+        if args.auto_offline is not None:
+            extra["auto_offline"] = args.auto_offline
+
+    if args.action == "delete_task":
+        extra.update(
+            {
+                "task_name": args.task_name or "",
+                "task_code": args.task_code or "",
             }
         )
         if args.restore_original_state is not None:
@@ -161,6 +179,7 @@ def main() -> None:
     parser.add_argument("--tenant-code")
     parser.add_argument("--upstream-task-name")
     parser.add_argument("--upstream-task-code")
+    parser.add_argument("--task-code")
     parser.add_argument("--restore-original-state", action="store_const", const=True, default=None)
     parser.add_argument("--auto-offline", action="store_const", const=True, default=None)
     args = parser.parse_args()

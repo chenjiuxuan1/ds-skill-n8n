@@ -13,6 +13,7 @@ const ACTIONS = new Set([
   'append_task',
   'append_sql_task',
   'append_shell_task',
+  'delete_task',
   'dump_workflow_graph',
 ]);
 
@@ -49,6 +50,7 @@ const payload = {
   tenant_code: inputPayload.tenant_code || '',
   upstream_task_name: inputPayload.upstream_task_name || '',
   upstream_task_code: inputPayload.upstream_task_code || '',
+  task_code: inputPayload.task_code || '',
 };
 
 if (typeof inputPayload.restore_original_state === 'boolean') {
@@ -96,6 +98,14 @@ if (['append_task', 'append_sql_task', 'append_shell_task'].includes(action)) {
   }
   if (taskType === 'SHELL' && !payload.script) {
     errors.push(`${action} requires script for SHELL task`);
+  }
+}
+
+if (action === 'delete_task') {
+  if (!payload.project_code) errors.push('delete_task requires project_code');
+  if (!payload.workflow_code) errors.push('delete_task requires workflow_code');
+  if (!payload.task_name && !payload.task_code) {
+    errors.push('delete_task requires task_name or task_code');
   }
 }
 

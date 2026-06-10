@@ -73,6 +73,7 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `delete_task`
 - `dump_workflow_graph`
 
 ## 注意
@@ -82,4 +83,3 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - 对应国家 `Execute Command` 是否真正返回了 `stdout`
 - `内容解析` 是否仍在使用旧代码
 - `Respond to Webhook` 的 `Response Body` 是否为 `{{ $json }}`
-

@@ -24,6 +24,7 @@
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `delete_task`
 - `dump_workflow_graph`
 
 ## 标准 webhook body
@@ -82,6 +83,20 @@
 
 等价于 `append_task + task_type=SHELL`
 
+### `delete_task`
+
+按任务名或任务 code 删除工作流中的已有节点。
+
+最小 payload：
+
+```json
+{
+  "project_code": "13068695921632",
+  "workflow_code": "175767388280714",
+  "task_name": "dwd_ad_fb_campaing_get"
+}
+```
+
 ## `sql_type` 兼容
 
 - 查询型：`0 / query / select / read`
@@ -117,4 +132,3 @@
   }
 }
 ```
-
