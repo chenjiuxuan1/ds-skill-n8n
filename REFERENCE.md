@@ -28,6 +28,13 @@
 - `delete_task`
 - `dump_workflow_graph`
 
+## token 使用规则
+
+- `ds_token` 必须由用户自己提供
+- 示例里的 `YOUR_DS_TOKEN` 只是占位符
+- 不要把某个固定国家的真实 token 写进 skill、n8n 节点或示例文档
+- 同一个动作在不同用户下的可见项目和可执行权限，取决于该用户 token 本身
+
 ## 标准 webhook body
 
 ```json
@@ -48,7 +55,22 @@
 }
 ```
 
-## 任务追加动作
+## n8n 标准化后字段
+
+`解析并标准化请求` 节点通常会额外产出：
+
+- `payload_json`
+- `payload_b64`
+- `valid`
+- `errors`
+
+国家执行节点通常实际消费：
+
+- `country`
+- `action`
+- `ds_token`
+- `request_id`
+- `payload_b64`
 
 ## 实例动作
 
@@ -64,6 +86,8 @@
   "instance_id": "2614176"
 }
 ```
+
+## 任务追加动作
 
 ### `append_task`
 
@@ -117,6 +141,13 @@
 
 - 查询型：`0 / query / select / read`
 - 执行型：`1 / non_query / non-query / update / write / execute`
+
+说明：
+
+- 当前 DS UI 中部分环境会显示为数字值，所以看到 `0` 是正常的
+- 如果追加的是 SQL 任务，建议优先传语义化值 `query` 或 `execute`
+- gateway 会统一做兼容转换
+- 如果追加的是 SHELL 任务，应改用 `task_type=SHELL` 并传 `script`，不使用 `sql_type`
 
 ## 返回格式
 

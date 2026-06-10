@@ -7,10 +7,11 @@
 这个仓库解决两件事：
 
 1. 让 Codex 能把用户的 DS 调度操作意图转换成标准 webhook 请求
-2. 让 n8n 接收这些请求后，按国家路由到对应的 `Intelligent-Alarm-Repair-Assistant` 仓库配置，再调用 DS 3.4 API
+2. 让 n8n 接收这些请求后，按国家路由到对应跳板机，再调用跳板机上的 `ds-scheduler-gateway` 执行 DS 3.4 API
 
 ## 当前支持
 
+- `list_projects`
 - `list_workflows`
 - `get_workflow`
 - `online_workflow`
@@ -19,6 +20,11 @@
 - `list_instances`
 - `get_instance`
 - `retry_instance`
+- `dump_workflow_graph`
+- `append_task`
+- `append_sql_task`
+- `append_shell_task`
+- `delete_task`
 
 ## 仓库结构
 
@@ -31,9 +37,32 @@
 │   └── build_ds_webhook_payload.py
 └── n8n/
     ├── README.md
-    ├── ds_scheduler_router.py
     └── workflow-template.json
 ```
+
+## 正式链路
+
+```text
+User
+  -> Codex skill
+  -> n8n webhook
+  -> 解析并标准化请求
+  -> If(valid)
+  -> 按国家分流
+  -> Execute Command
+  -> SSH 到各国跳板机
+  -> /root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py
+  -> DolphinScheduler 3.4 API
+  -> 内容解析
+  -> Respond to Webhook
+```
+
+## 权限与 token 规则
+
+- `ds_token` 必须由最终使用者自己提供
+- `ds_token` 决定这次请求能操作哪些项目、工作流、实例
+- skill 和 n8n 都不应该默认内置共享 token
+- 当用户没有提供 token 时，Codex 应先提示用户补充自己的 token，再执行正式请求
 
 ## 快速开始
 
@@ -49,36 +78,36 @@ python3 scripts/build_ds_webhook_payload.py \
   --custom-params-json '{"dt":"2026-06-05"}'
 ```
 
+其中：
+
+- `YOUR_DS_TOKEN` 需要替换成调用人的真实 DS token
+- `country` 需要和目标环境一致
+- 这个请求只是发给 n8n，中间不会自动提权
+
 ### 2. n8n 侧执行
 
-n8n 建议使用 `Execute Command` 节点直接调用：
+n8n 推荐按国家分别配置 `Execute Command` 节点，直接 SSH 到跳板机执行：
 
 ```bash
-cd /root/ds-skill-n8n && DS_COUNTRY_REPO_BASE=/root python3 n8n/ds_scheduler_router.py --body '{{ JSON.stringify($json.body) }}'
+ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/ds_scheduler_entry.py --country cn --action '{{$json.action}}' --ds-token '{{$json.ds_token}}' --request-id '{{$json.request_id}}' --payload-b64 '{{$json.payload_b64}}'"
 ```
 
-如果你的节点更适合走环境变量，也可以改成：
+其他国家只替换两部分：
 
-```bash
-cd /root/ds-skill-n8n && DS_COUNTRY_REPO_BASE=/root DS_WEBHOOK_BODY='{{ JSON.stringify($json.body) }}' python3 n8n/ds_scheduler_router.py --body-env DS_WEBHOOK_BODY
-```
-
-这里的 `DS_COUNTRY_REPO_BASE=/root` 表示 6 个国家仓库都放在 `/root` 下面，例如：
-
-- `/root/CN-Intelligent-Alarm-Repair-Assistant`
-- `/root/PH-Intelligent-Alarm-Repair-Assistant`
-- `/root/TH-Intelligent-Alarm-Repair-Assistant`
+- SSH 地址
+- `--country`
 
 ## 依赖
 
 - Python 3.9+
 - n8n
-- 目标机器可访问各国 DS 地址
-- 目标机器本地存在 6 个国家仓库
+- 各国家跳板机上已部署 `/root/ds-scheduler-gateway`
+- n8n 可通过 `Execute Command` 节点访问对应跳板机
+- 跳板机到目标 DS 环境网络可达
 
 ## 安全说明
 
-- `ds_token` 必须由调用方提供
+- `ds_token` 必须由调用方提供，而且应当是调用方自己的 token
 - 本仓库不负责扩大 DS 权限
 - 建议 n8n 侧额外校验：
   - 共享密钥

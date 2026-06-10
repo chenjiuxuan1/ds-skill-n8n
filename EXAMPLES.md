@@ -1,5 +1,10 @@
 # Examples
 
+先说明两点：
+
+- 所有示例里的 `YOUR_DS_TOKEN` 都必须替换成调用人自己的 DS token
+- n8n 只透传这个 token 对应的权限，不会自动放大范围
+
 ## 查询项目
 
 ```bash
@@ -21,6 +26,32 @@ python3 scripts/build_ds_webhook_payload.py \
   --ds-token "YOUR_DS_TOKEN" \
   --project-code 13068695921632 \
   --workflow-code 174599383687393
+```
+
+## 查询失败实例
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action list_instances \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --state-type FAILURE \
+  --page-no 1 \
+  --page-size 20
+```
+
+## 重跑失败实例
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action retry_instance \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --instance-id 2614176
 ```
 
 ## 追加 SQL 任务
@@ -56,3 +87,15 @@ python3 scripts/build_ds_webhook_payload.py \
   --script 'python3 $WATTREL_HOME/console.py etl --table=dwd_ad_fb_advertiser_get'
 ```
 
+## 删除任务
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action delete_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --workflow-code 174599383687393 \
+  --task-name "测试2"
+```

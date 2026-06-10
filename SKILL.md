@@ -30,12 +30,29 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
 
 ## 当前架构
 
-`Codex -> n8n Webhook -> 请求标准化 -> If(valid) -> 按国家分流 -> 各国 Execute Command -> 内容解析 -> Respond to Webhook`
+`Codex -> n8n Webhook -> 请求标准化 -> If(valid) -> 按国家分流 -> 各国 Execute Command(SSH 跳板机) -> /root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py -> DS API -> 内容解析 -> Respond to Webhook`
+
+## 使用前提
+
+- 用户必须明确提供自己的 `ds_token`
+- `ds_token` 代表的是用户本人在对应 DS 环境里的项目范围和操作权限
+- 如果用户没有给 token，先提醒用户补充，再发正式请求
+- 不要在 skill、n8n、示例代码里内置固定 token
+- `country` 必须是 `cn / ine / mx / ph / pk / th` 之一
+
+## 默认执行约束
+
+- 这个 skill 不直接访问 DS API
+- 这个 skill 负责构造或发送标准 webhook 请求
+- 真正执行发生在 n8n 的国家节点里
+- 各国家节点统一走跳板机上的 `/root/ds-scheduler-gateway`
+- 如果用户只说“帮我查/帮我改”，但没有给 token，先提示：
+  - “请提供你自己的 DS token，我会按你的权限范围操作”
 
 ## 关键点
 
-- `ds_token` 必须由用户提供
-- n8n 只做中转，不扩大权限
+- `ds_token` 必须由用户提供，且应使用用户自己的 token
+- n8n 只做中转，不扩大权限，不保存公共高权限 token
 - 各国节点统一执行 `/root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py`
 - `append_task` 是通用追加入口
 - `append_sql_task` / `append_shell_task` 是特化入口
