@@ -70,6 +70,7 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `retry_instance`
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`

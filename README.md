@@ -18,6 +18,7 @@
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `retry_instance`
 
 ## 仓库结构
 

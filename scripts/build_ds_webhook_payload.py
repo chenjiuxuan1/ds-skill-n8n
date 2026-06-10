@@ -20,6 +20,7 @@ ACTIONS = {
     "trigger_workflow",
     "list_instances",
     "get_instance",
+    "retry_instance",
     "append_task",
     "append_sql_task",
     "append_shell_task",
@@ -62,6 +63,9 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
+    if args.action == "retry_instance":
+        _require(bool(args.project_code), "retry_instance requires --project-code")
+        _require(bool(args.instance_id), "retry_instance requires --instance-id")
     if args.action == "get_workflow":
         _require(bool(args.workflow_code or args.workflow_name), "get_workflow requires --workflow-code or --workflow-name")
     if args.action in {"append_task", "append_sql_task", "append_shell_task"}:

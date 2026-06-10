@@ -21,6 +21,7 @@
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `retry_instance`
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
@@ -48,6 +49,21 @@
 ```
 
 ## 任务追加动作
+
+## 实例动作
+
+### `retry_instance`
+
+用于对失败工作流实例执行“失败任务重跑”。
+
+最小 payload：
+
+```json
+{
+  "project_code": "13068695921632",
+  "instance_id": "2614176"
+}
+```
 
 ### `append_task`
 

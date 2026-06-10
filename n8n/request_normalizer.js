@@ -10,6 +10,7 @@ const ACTIONS = new Set([
   'trigger_workflow',
   'list_instances',
   'get_instance',
+  'retry_instance',
   'append_task',
   'append_sql_task',
   'append_shell_task',
@@ -71,6 +72,10 @@ if (['online_workflow', 'offline_workflow', 'trigger_workflow', 'dump_workflow_g
 }
 if (action === 'get_instance' && !payload.instance_id) {
   errors.push('get_instance requires instance_id');
+}
+if (action === 'retry_instance') {
+  if (!payload.project_code) errors.push('retry_instance requires project_code');
+  if (!payload.instance_id) errors.push('retry_instance requires instance_id');
 }
 if (action === 'get_workflow' && !payload.workflow_code && !payload.workflow_name) {
   errors.push('get_workflow requires workflow_code or workflow_name');

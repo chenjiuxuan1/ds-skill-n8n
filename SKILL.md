@@ -21,6 +21,7 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
   - `trigger_workflow`
   - `list_instances`
   - `get_instance`
+  - `retry_instance`
   - `dump_workflow_graph`
   - `append_task`
   - `append_sql_task`
@@ -39,6 +40,7 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
 - `append_task` 是通用追加入口
 - `append_sql_task` / `append_shell_task` 是特化入口
 - `delete_task` 用于按 `task_name` 或 `task_code` 删除已有任务
+- `retry_instance` 用于对失败实例执行失败任务重跑
 
 ## 参考
 
