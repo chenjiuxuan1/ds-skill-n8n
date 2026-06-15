@@ -26,6 +26,7 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
   - `append_task`
   - `append_sql_task`
   - `append_shell_task`
+  - `disable_tasks_except`
   - `delete_task`
 
 ## 当前架构
@@ -56,6 +57,7 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
 - 各国节点统一执行 `/root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py`
 - `append_task` 是通用追加入口
 - `append_sql_task` / `append_shell_task` 是特化入口
+- `disable_tasks_except` 用于“白名单保留，其余批量禁用”
 - `delete_task` 用于按 `task_name` 或 `task_code` 删除已有任务
 - `retry_instance` 用于对失败实例执行失败任务重跑
 

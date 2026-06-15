@@ -24,6 +24,7 @@ ACTIONS = {
     "append_task",
     "append_sql_task",
     "append_shell_task",
+    "disable_tasks_except",
     "delete_task",
     "dump_workflow_graph",
 }
@@ -79,6 +80,15 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             _require(bool(args.sql), f"{args.action} requires --sql for SQL task")
         if task_type == "SHELL":
             _require(bool(args.script), f"{args.action} requires --script for SHELL task")
+    if args.action == "disable_tasks_except":
+        _require(bool(args.project_code), "disable_tasks_except requires --project-code")
+        _require(bool(args.workflow_code), "disable_tasks_except requires --workflow-code")
+        keep_task_names = _load_json(args.keep_task_names_json, [])
+        keep_task_codes = _load_json(args.keep_task_codes_json, [])
+        _require(
+            bool(keep_task_names or keep_task_codes),
+            "disable_tasks_except requires --keep-task-names-json or --keep-task-codes-json",
+        )
     if args.action == "delete_task":
         _require(bool(args.project_code), "delete_task requires --project-code")
         _require(bool(args.workflow_code), "delete_task requires --workflow-code")
@@ -123,6 +133,19 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "upstream_task_code": args.upstream_task_code or "",
             "task_code": args.task_code or "",
         }
+        )
+        if args.restore_original_state is not None:
+            extra["restore_original_state"] = args.restore_original_state
+        if args.auto_offline is not None:
+            extra["auto_offline"] = args.auto_offline
+
+    if args.action == "disable_tasks_except":
+        extra.update(
+            {
+                "keep_task_names": _load_json(args.keep_task_names_json, []),
+                "keep_task_codes": _load_json(args.keep_task_codes_json, []),
+                "target_task_name_prefixes": _load_json(args.target_task_name_prefixes_json, []),
+            }
         )
         if args.restore_original_state is not None:
             extra["restore_original_state"] = args.restore_original_state
@@ -184,6 +207,9 @@ def main() -> None:
     parser.add_argument("--upstream-task-name")
     parser.add_argument("--upstream-task-code")
     parser.add_argument("--task-code")
+    parser.add_argument("--keep-task-names-json")
+    parser.add_argument("--keep-task-codes-json")
+    parser.add_argument("--target-task-name-prefixes-json")
     parser.add_argument("--restore-original-state", action="store_const", const=True, default=None)
     parser.add_argument("--auto-offline", action="store_const", const=True, default=None)
     args = parser.parse_args()

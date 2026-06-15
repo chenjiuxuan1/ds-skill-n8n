@@ -14,6 +14,7 @@ const ACTIONS = new Set([
   'append_task',
   'append_sql_task',
   'append_shell_task',
+  'disable_tasks_except',
   'delete_task',
   'dump_workflow_graph',
 ]);
@@ -52,6 +53,11 @@ const payload = {
   upstream_task_name: inputPayload.upstream_task_name || '',
   upstream_task_code: inputPayload.upstream_task_code || '',
   task_code: inputPayload.task_code || '',
+  keep_task_names: Array.isArray(inputPayload.keep_task_names) ? inputPayload.keep_task_names : [],
+  keep_task_codes: Array.isArray(inputPayload.keep_task_codes) ? inputPayload.keep_task_codes : [],
+  target_task_name_prefixes: Array.isArray(inputPayload.target_task_name_prefixes)
+    ? inputPayload.target_task_name_prefixes
+    : [],
 };
 
 if (typeof inputPayload.restore_original_state === 'boolean') {
@@ -111,6 +117,14 @@ if (action === 'delete_task') {
   if (!payload.workflow_code) errors.push('delete_task requires workflow_code');
   if (!payload.task_name && !payload.task_code) {
     errors.push('delete_task requires task_name or task_code');
+  }
+}
+
+if (action === 'disable_tasks_except') {
+  if (!payload.project_code) errors.push('disable_tasks_except requires project_code');
+  if (!payload.workflow_code) errors.push('disable_tasks_except requires workflow_code');
+  if (!payload.keep_task_names.length && !payload.keep_task_codes.length) {
+    errors.push('disable_tasks_except requires keep_task_names or keep_task_codes');
   }
 }
 
