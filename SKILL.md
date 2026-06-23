@@ -26,6 +26,7 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
   - `append_task`
   - `append_sql_task`
   - `append_shell_task`
+  - `disable_task`
   - `disable_tasks_except`
   - `delete_task`
 
@@ -40,6 +41,7 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
 - 如果用户没有给 token，先提醒用户补充，再发正式请求
 - 不要在 skill、n8n、示例代码里内置固定 token
 - `country` 必须是 `cn / ine / mx / ph / pk / th` 之一
+- 删除能力只允许到任务节点，不允许到项目或工作流层级
 
 ## 默认执行约束
 
@@ -57,9 +59,39 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
 - 各国节点统一执行 `/root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py`
 - `append_task` 是通用追加入口
 - `append_sql_task` / `append_shell_task` 是特化入口
+- `disable_task` 用于精确下线单个任务节点，但不删除节点
 - `disable_tasks_except` 用于“白名单保留，其余批量禁用”
 - `delete_task` 用于按 `task_name` 或 `task_code` 删除已有任务
 - `retry_instance` 用于对失败实例执行失败任务重跑
+
+## 固定模板：批量精确下线任务
+
+当用户要“把一批指定任务下线，但不要删掉任务节点”时，统一使用 `disable_task`，不要误用 `delete_task`。
+
+推荐固定流程：
+
+1. 先按任务名定位任务所在工作流
+2. 拿到每条命中的 `project_code / workflow_code / task_name`
+3. 对每条任务逐条发送 `disable_task`
+4. 如果用户要求“保持原工作流上下线状态”，在 payload 中显式传：
+   - `restore_original_state=true`
+   - `auto_offline=true`
+
+适用场景：
+- 批量关闭 ODS 白名单外任务
+- 只下线节点，不删除 DAG
+- 精确命中，不做前缀模糊批量误伤
+
+不适用：
+- 真正要删除节点时，这时才用 `delete_task`
+
+## 强制安全边界
+
+- 允许：删除任务节点 `delete_task`
+- 禁止：删除项目
+- 禁止：删除工作流
+- 如果用户提出“删除项目”或“删除工作流”，直接拒绝，不构造 webhook
+- 如果外部原始请求试图传入 `delete_project`、`delete_workflow` 或等价动作，n8n 应直接拦截
 
 ## 参考
 

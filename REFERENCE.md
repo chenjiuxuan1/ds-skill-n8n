@@ -25,8 +25,23 @@
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `disable_task`
+- `disable_tasks_except`
 - `delete_task`
 - `dump_workflow_graph`
+
+## 明确禁止的动作
+
+以下动作不在 skill 支持范围内，并且应被明确拒绝：
+
+- 删除项目
+- 删除工作流
+
+也就是说：
+
+- 允许：`delete_task`
+- 禁止：`delete_project`
+- 禁止：`delete_workflow`
 
 ## token 使用规则
 
@@ -137,6 +152,83 @@
 }
 ```
 
+### `disable_task`
+
+按任务名或任务 code 精确下线工作流中的已有任务节点，但不删除节点。
+
+最小 payload：
+
+```json
+{
+  "project_code": "13068695921632",
+  "workflow_code": "13068714127712",
+  "task_name": "ods_app_user"
+}
+```
+
+可选：
+
+- `task_code`
+- `restore_original_state`
+- `auto_offline`
+
+说明：
+
+- `disable_task` 适合“批量精确下线任务”
+- 推荐逐条发送，避免前缀匹配误伤
+- 如果需要保持工作流原有上下线状态，建议同时传：
+  - `restore_original_state=true`
+  - `auto_offline=true`
+- 如果目标是删除节点而不是下线节点，应改用 `delete_task`
+
+### `disable_tasks_except`
+
+用于“保留白名单任务，其余批量下线”。
+
+最小 payload：
+
+```json
+{
+  "project_code": "13068695921632",
+  "workflow_code": "17480254697952",
+  "keep_task_names": [
+    "ods_msgsvr_ivr_account",
+    "ods_msgsvr_ivr_app_account"
+  ]
+}
+```
+
+## 固定操作模板：批量精确下线任务
+
+当用户给出一组任务名，希望“全部下线但不要删除”时，推荐按下面固定模板操作：
+
+1. 先查询这些任务分别位于哪些工作流
+2. 确认每个命中的：
+   - `project_code`
+   - `workflow_code`
+   - `task_name`
+3. 对每一条命中记录逐条调用 `disable_task`
+4. 最后再复查 `flag/version` 或在 DS UI 中确认节点已下线
+
+推荐请求体：
+
+```json
+{
+  "source": "codex-skill",
+  "country": "mx",
+  "action": "disable_task",
+  "ds_token": "user-provided-token",
+  "request_id": "mx-disable-exact-001",
+  "payload": {
+    "project_code": "13068695921632",
+    "workflow_code": "13068714127712",
+    "task_name": "ods_app_user",
+    "restore_original_state": true,
+    "auto_offline": true
+  }
+}
+```
+
 ## `sql_type` 兼容
 
 - 查询型：`0 / query / select / read`
@@ -163,6 +255,14 @@
   "error": null
 }
 ```
+
+## 安全边界
+
+- `ds_token` 必须由用户提供
+- n8n 和远端网关只使用调用者提供的 token
+- 允许删除任务节点
+- 禁止删除项目
+- 禁止删除工作流
 
 失败：
 

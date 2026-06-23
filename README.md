@@ -24,7 +24,20 @@
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `disable_task`
+- `disable_tasks_except`
 - `delete_task`
+
+## 明确禁止
+
+这套 skill 当前明确不支持以下高风险动作：
+
+- 删除项目
+- 删除工作流
+
+当前删除能力仅限：
+
+- 删除任务节点 `delete_task`
 
 ## 仓库结构
 
@@ -97,6 +110,28 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - SSH 地址
 - `--country`
 
+## 固定模板：批量精确下线任务
+
+这次已经验证过的标准做法是：
+
+1. 先查出目标任务分别属于哪个工作流
+2. 按“每个工作流 + 每个任务”逐条调用 `disable_task`
+3. 不删除节点，只把节点下线
+4. 如需保持工作流原状态，传：
+   - `restore_original_state=true`
+   - `auto_offline=true`
+
+推荐动作：
+
+- 用 `disable_task` 做批量精确下线
+- 用 `disable_tasks_except` 做“白名单保留，其余批量下线”
+- 用 `delete_task` 做真正删除节点
+
+不推荐：
+
+- 用模糊前缀去误伤同名任务
+- 把“下线节点”和“删除节点”混为一谈
+
 ## 依赖
 
 - Python 3.9+
@@ -109,6 +144,9 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 
 - `ds_token` 必须由调用方提供，而且应当是调用方自己的 token
 - 本仓库不负责扩大 DS 权限
+- 允许删除任务节点
+- 禁止删除项目
+- 禁止删除工作流
 - 建议 n8n 侧额外校验：
   - 共享密钥
   - 国家白名单

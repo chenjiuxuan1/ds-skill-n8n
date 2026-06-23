@@ -99,3 +99,40 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 174599383687393 \
   --task-name "测试2"
 ```
+
+## 精确下线单个任务
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action disable_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --workflow-code 13068714127712 \
+  --task-name "ods_app_user" \
+  --restore-original-state \
+  --auto-offline
+```
+
+## 批量精确下线任务
+
+当用户给的是一组明确任务名，推荐先查工作流归属，再逐条发送 `disable_task`。
+
+例如：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action disable_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --request-id "mx-disable-exact-001" \
+  --project-code 13068695921632 \
+  --workflow-code 13068714127712 \
+  --task-name "ods_app_user" \
+  --restore-original-state \
+  --auto-offline
+```
+
+接着把第二个、第三个任务继续按同样模板逐条发出即可。

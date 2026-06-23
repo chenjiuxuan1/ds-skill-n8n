@@ -1,5 +1,14 @@
 const raw = $json.body ?? $json;
 
+const FORBIDDEN_ACTION_ALIASES = new Set([
+  'delete_project',
+  'remove_project',
+  'drop_project',
+  'delete_workflow',
+  'remove_workflow',
+  'drop_workflow',
+]);
+
 const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
   'list_projects',
@@ -15,6 +24,7 @@ const ACTIONS = new Set([
   'append_sql_task',
   'append_shell_task',
   'disable_tasks_except',
+  'disable_task',
   'delete_task',
   'dump_workflow_graph',
 ]);
@@ -68,6 +78,10 @@ if (typeof inputPayload.auto_offline === 'boolean') {
 }
 
 const errors = [];
+
+if (FORBIDDEN_ACTION_ALIASES.has(action)) {
+  errors.push(`forbidden action: ${action}. deleting projects or workflows is not allowed; only delete_task is allowed`);
+}
 
 if (!COUNTRIES.has(country)) errors.push(`unsupported country: ${country}`);
 if (!ACTIONS.has(action)) errors.push(`unsupported action: ${action}`);
@@ -125,6 +139,14 @@ if (action === 'disable_tasks_except') {
   if (!payload.workflow_code) errors.push('disable_tasks_except requires workflow_code');
   if (!payload.keep_task_names.length && !payload.keep_task_codes.length) {
     errors.push('disable_tasks_except requires keep_task_names or keep_task_codes');
+  }
+}
+
+if (action === 'disable_task') {
+  if (!payload.project_code) errors.push('disable_task requires project_code');
+  if (!payload.workflow_code) errors.push('disable_task requires workflow_code');
+  if (!payload.task_name && !payload.task_code) {
+    errors.push('disable_task requires task_name or task_code');
   }
 }
 

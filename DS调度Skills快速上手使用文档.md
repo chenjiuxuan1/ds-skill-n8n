@@ -48,8 +48,16 @@
 | `append_task` | 通用追加任务 |
 | `append_sql_task` | 追加 SQL 任务 |
 | `append_shell_task` | 追加 SHELL 任务 |
+| `disable_task` | 下线已有任务但不删除节点 |
+| `disable_tasks_except` | 保留白名单，其余任务批量下线 |
 | `delete_task` | 删除已有任务 |
 
+明确禁止：
+
+- 删除项目
+- 删除工作流
+
+当前“删除”能力仅限删除任务节点。
 典型使用场景：
 
 - 查询某个国家“数仓-工作流”项目里有哪些上线工作流
@@ -242,6 +250,38 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 把刚刚新增的 dwd_ad_af_event 删除掉。
 ```
 
+### 7.8 批量精确下线任务
+
+```text
+把墨西哥数仓工作流里这批任务全部下线，但不要删除节点，保持工作流原来的上下线状态。
+```
+
+Codex 推荐固定动作：
+
+1. 先查询这些任务所在工作流
+2. 再逐条调用 `disable_task`
+3. 对每条请求传：
+   - `restore_original_state=true`
+   - `auto_offline=true`
+
+这类场景不要误用 `delete_task`。
+
+### 7.9 白名单保留，其余批量下线
+
+```text
+保留这份白名单里的任务，其他任务全部下线。
+```
+
+这种场景更适合用 `disable_tasks_except`。
+
+### 7.10 明确禁止的请求
+
+下面这类请求应直接拒绝，不执行：
+
+```text
+帮我把这个项目删除掉。
+帮我把这个工作流永久删除。
+```
 ## 8. Codex 操作者的默认判断规则
 
 如果是 Codex 操作者，建议按下面规则执行：

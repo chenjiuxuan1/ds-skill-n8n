@@ -25,6 +25,7 @@ ACTIONS = {
     "append_sql_task",
     "append_shell_task",
     "disable_tasks_except",
+    "disable_task",
     "delete_task",
     "dump_workflow_graph",
 }
@@ -93,6 +94,10 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.project_code), "delete_task requires --project-code")
         _require(bool(args.workflow_code), "delete_task requires --workflow-code")
         _require(bool(args.task_name or args.task_code), "delete_task requires --task-name or --task-code")
+    if args.action == "disable_task":
+        _require(bool(args.project_code), "disable_task requires --project-code")
+        _require(bool(args.workflow_code), "disable_task requires --workflow-code")
+        _require(bool(args.task_name or args.task_code), "disable_task requires --task-name or --task-code")
 
     payload = {
         "source": "codex-skill",
@@ -152,7 +157,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         if args.auto_offline is not None:
             extra["auto_offline"] = args.auto_offline
 
-    if args.action == "delete_task":
+    if args.action in {"delete_task", "disable_task"}:
         extra.update(
             {
                 "task_name": args.task_name or "",

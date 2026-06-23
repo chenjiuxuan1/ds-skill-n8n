@@ -56,6 +56,14 @@ Webhook
 - 国家节点只透传 `{{$json.ds_token}}` 到跳板机命令
 - 谁的 token 发起请求，就按谁的 DS 权限执行
 
+## 风险动作边界
+
+- 允许：`delete_task`
+- 允许：`disable_task`
+- 禁止：删除项目
+- 禁止：删除工作流
+- 建议在 `解析并标准化请求` 节点直接拦截 `delete_project`、`delete_workflow` 及其等价动作
+
 ## 各国家命令模板
 
 示例：
@@ -84,8 +92,21 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `disable_task`
+- `disable_tasks_except`
 - `delete_task`
 - `dump_workflow_graph`
+
+## 批量精确下线任务建议
+
+如果是“给一组明确任务名，逐条下线但不删除”，推荐：
+
+1. 先在上游查到 `workflow_code + task_name`
+2. n8n 中逐条执行 `disable_task`
+3. 同时传 `restore_original_state=true`
+4. 同时传 `auto_offline=true`
+
+这样可以避免把“节点下线”误做成“节点删除”。
 
 ## 注意
 
