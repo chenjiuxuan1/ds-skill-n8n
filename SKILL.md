@@ -21,81 +21,199 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
   - `trigger_workflow`
   - `list_instances`
   - `get_instance`
-  - `retry_instance`
   - `dump_workflow_graph`
   - `append_task`
   - `append_sql_task`
   - `append_shell_task`
   - `disable_task`
   - `disable_tasks_except`
-  - `delete_task`
+- 用户希望由 Codex 输出标准 webhook body、`curl`、测试方式，或者直接根据现有 n8n 契约构造请求
+
+不适用：
+- 用户要直接从 Codex 打内网 DS API
+- 用户要修改 n8n 之外的独立调度系统
+- 用户要大规模重构 workflow JSON 生成逻辑但没有明确目标
 
 ## 当前架构
 
-`Codex -> n8n Webhook -> 请求标准化 -> If(valid) -> 按国家分流 -> 各国 Execute Command(SSH 跳板机) -> /root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py -> DS API -> 内容解析 -> Respond to Webhook`
+请求链路：
+1. Codex 构造标准 webhook body
+2. n8n `Webhook` 接收请求
+3. n8n `解析并标准化请求` 节点补充 `payload_json` / `payload_b64`
+4. n8n `按国家分流`
+5. 各国家 `Execute Command` 通过跳板机 SSH 到远端
+6. 远端执行：
+   - `cd /root/ds-scheduler-gateway`
+   - `python3 scripts/ds_scheduler_entry.py ...`
+7. 远端网关调用对应国家的 DS API
+8. n8n `内容解析`
+9. `Respond to Webhook`
 
-## 使用前提
+## 默认工作方式
 
-- 用户必须明确提供自己的 `ds_token`
-- `ds_token` 代表的是用户本人在对应 DS 环境里的项目范围和操作权限
-- 如果用户没有给 token，先提醒用户补充，再发正式请求
-- 不要在 skill、n8n、示例代码里内置固定 token
-- `country` 必须是 `cn / ine / mx / ph / pk / th` 之一
-- 删除能力只允许到任务节点，不允许到项目或工作流层级
+收到请求后按下面顺序处理：
+1. 识别国家、动作、目标对象
+2. 校验动作是否在支持列表内
+3. 校验必填字段
+4. 如果动作会修改工作流定义，先做工作流完整性检查
+5. 构造标准 JSON body
+6. 如果用户要“给我调用代码”，输出可执行 `curl`
+7. 如果用户要“测试一下”，优先给正式 webhook 请求
+8. 如果用户要“看返回结果”，直接解释 n8n 返回 JSON 中的 `success/data/error`
 
-## 默认执行约束
+## 必要输入
 
-- 这个 skill 不直接访问 DS API
-- 这个 skill 负责构造或发送标准 webhook 请求
-- 真正执行发生在 n8n 的国家节点里
-- 各国家节点统一走跳板机上的 `/root/ds-scheduler-gateway`
-- 如果用户只说“帮我查/帮我改”，但没有给 token，先提示：
-  - “请提供你自己的 DS token，我会按你的权限范围操作”
+最少要确认：
+- `country`
+- `action`
+- `ds_token`
 
-## 关键点
+常见补充：
+- `project_code`
+- `workflow_code`
+- `workflow_name`
+- `instance_id`
+- `page_no`
+- `page_size`
+- `search_val`
+- `state_type`
+- `custom_params`
 
-- `ds_token` 必须由用户提供，且应使用用户自己的 token
-- n8n 只做中转，不扩大权限，不保存公共高权限 token
-- 各国节点统一执行 `/root/ds-scheduler-gateway/scripts/ds_scheduler_entry.py`
-- `append_task` 是通用追加入口
-- `append_sql_task` / `append_shell_task` 是特化入口
-- `disable_task` 用于精确下线单个任务节点，但不删除节点
-- `disable_tasks_except` 用于“白名单保留，其余批量禁用”
-- `delete_task` 用于按 `task_name` 或 `task_code` 删除已有任务
-- `retry_instance` 用于对失败实例执行失败任务重跑
+新增任务相关：
+- `task_type`
+- `task_name`
+- `template_task_name`
+- `sql` 或 `script`
+- `sql_type`
+- `upstream_task_name` / `upstream_task_code`
+- `restore_original_state`
+- `auto_offline`
 
-## 固定模板：批量精确下线任务
+## 输出要求
 
-当用户要“把一批指定任务下线，但不要删掉任务节点”时，统一使用 `disable_task`，不要误用 `delete_task`。
+默认输出尽量包含：
+- 国家
+- 动作
+- 标准 webhook body
+- 可执行 `curl`
+- 字段说明
 
-推荐固定流程：
+如果用户明确要直接发请求：
+- 优先使用正式 webhook 地址
+- 请求体必须符合 skill 契约
+- 返回结果要解释成用户可理解的结论，而不是只贴原始 JSON
 
-1. 先按任务名定位任务所在工作流
-2. 拿到每条命中的 `project_code / workflow_code / task_name`
-3. 对每条任务逐条发送 `disable_task`
-4. 如果用户要求“保持原工作流上下线状态”，在 payload 中显式传：
-   - `restore_original_state=true`
-   - `auto_offline=true`
+## 动作边界
 
-适用场景：
-- 批量关闭 ODS 白名单外任务
-- 只下线节点，不删除 DAG
-- 精确命中，不做前缀模糊批量误伤
+### 查询类
 
-不适用：
-- 真正要删除节点时，这时才用 `delete_task`
+- `list_projects`
+- `list_workflows`
+- `get_workflow`
+- `list_instances`
+- `get_instance`
+- `dump_workflow_graph`
 
-## 强制安全边界
+### 控制类
 
-- 允许：删除任务节点 `delete_task`
-- 禁止：删除项目
-- 禁止：删除工作流
-- 如果用户提出“删除项目”或“删除工作流”，直接拒绝，不构造 webhook
-- 如果外部原始请求试图传入 `delete_project`、`delete_workflow` 或等价动作，n8n 应直接拦截
+- `online_workflow`
+- `offline_workflow`
+- `trigger_workflow`
 
-## 参考
+### 结构修改类
 
-- 协议与字段：[REFERENCE.md](REFERENCE.md)
-- 示例：[EXAMPLES.md](EXAMPLES.md)
-- n8n 节点说明：[n8n/README.md](n8n/README.md)
-- 请求构造脚本：[scripts/build_ds_webhook_payload.py](scripts/build_ds_webhook_payload.py)
+- `append_task`
+- `append_sql_task`
+- `append_shell_task`
+- `delete_task`
+- `disable_task`
+- `disable_tasks_except`
+
+## 任务追加规则
+
+- `append_sql_task` 是 `append_task` 的 SQL 特化入口
+- `append_shell_task` 是 `append_task` 的 SHELL 特化入口
+- `disable_task` 用于精确下线单个任务，不再依赖任务名前缀匹配
+- `disable_tasks_except` 用于按任务名前缀圈定范围，然后保留白名单，其余统一禁用
+- 推荐优先使用 `append_task`，并显式传 `task_type`
+- SQL 任务：
+  - `select / with / show / desc / explain` 默认推断为 `sql_type = 0`
+  - 其他执行型 SQL 默认推断为 `sql_type = 1`
+  - 也允许显式传：
+    - `0 / query / select / read`
+    - `1 / non_query / update / write / execute`
+- SHELL 任务当前依赖工作流中已有一个 `SHELL` 模板任务可供克隆
+
+## 高风险保护
+
+以下动作都会触发“更新整个工作流定义”，不是只改单个任务：
+
+- `append_task`
+- `append_sql_task`
+- `append_shell_task`
+- `delete_task`
+- `disable_task`
+- `disable_tasks_except`
+
+对这些动作，必须先检查工作流级变量是否完整，尤其是 DS 3.4 中常见的同步工作流变量：
+
+- `src`
+- `db`
+- `dt`
+- `full`
+- `partition`
+- `complement`
+
+如果工作流中的任务脚本仍然引用了上述变量，例如：
+
+- `${src}`
+- `${db}`
+- `${dt}`
+- `${full}`
+
+但工作流定义里的 `globalParams / globalParamList / globalParamMap` 已经为空，那么禁止继续执行任何结构修改类动作。
+
+原因：
+
+- 这类更新会重新提交整个 workflow definition
+- 一旦把空的 `globalParams` 再次写回，任务运行时会出现：
+  - `--src=`
+  - `--db=`
+  - `--dt=`
+  - `--full=`
+- 最终导致同步任务报错，看起来像“下线任务后任务跑坏了”
+
+遇到这种情况的标准处理：
+
+1. 先停止后续修改类操作
+2. 先从 `t_ds_workflow_definition_log` 恢复该工作流历史版本中的 `global_params`
+3. 恢复完成后再继续下线、删除或追加任务
+
+## 风险判断要求
+
+当用户要求执行以下任一动作时：
+
+- 下线任务
+- 批量下线任务
+- 删除任务
+- 新增任务
+
+必须先补一句内部判断逻辑：
+
+- 这是“改工作流定义”，不是简单改任务状态
+- 如果是同步类工作流，优先检查 `globalParams` 是否为空
+- 如果为空，先告警并要求先恢复，不直接继续修改
+
+## 调用约束
+
+- `ds_token` 必须由用户提供
+- Skill 不持久化 token
+- 不自行扩大任何国家的 DS 权限
+- 如果用户没有提供 webhook 可达性环境，也照样输出 body 和 `curl`
+
+## 参考与资源
+
+- 协议和动作字段：见 [REFERENCE.md](REFERENCE.md)
+- 常见调用示例：见 [EXAMPLES.md](EXAMPLES.md)
+- 本地辅助脚本：见 [scripts/build_ds_webhook_payload.py](scripts/build_ds_webhook_payload.py)
+- n8n 侧说明：见 [n8n/README.md](n8n/README.md)

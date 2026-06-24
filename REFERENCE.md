@@ -11,6 +11,31 @@
 | 巴基斯坦 | `pk` |
 | 泰国 | `th` |
 
+## 标准 webhook body
+
+```json
+{
+  "source": "codex-skill",
+  "country": "cn",
+  "action": "list_workflows",
+  "ds_token": "user-provided-token",
+  "request_id": "20260610-001",
+  "payload": {
+    "project_code": "",
+    "workflow_code": "",
+    "workflow_name": "",
+    "instance_id": "",
+    "start_node_list": "",
+    "schedule_time": "",
+    "state_type": "",
+    "search_val": "",
+    "page_no": 1,
+    "page_size": 20,
+    "custom_params": {}
+  }
+}
+```
+
 ## 当前支持动作
 
 - `list_projects`
@@ -21,7 +46,6 @@
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
-- `retry_instance`
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
@@ -30,81 +54,129 @@
 - `delete_task`
 - `dump_workflow_graph`
 
-## 明确禁止的动作
+## 修改类动作的前置校验
 
-以下动作不在 skill 支持范围内，并且应被明确拒绝：
+以下动作都属于“整包更新 workflow definition”：
 
-- 删除项目
-- 删除工作流
+- `append_task`
+- `append_sql_task`
+- `append_shell_task`
+- `delete_task`
+- `disable_task`
+- `disable_tasks_except`
 
-也就是说：
+因此在执行前必须先检查：
 
-- 允许：`delete_task`
-- 禁止：`delete_project`
-- 禁止：`delete_workflow`
+1. 工作流中的任务脚本是否仍引用工作流级变量
+2. 工作流定义中的 `globalParams / globalParamList / globalParamMap` 是否完整
 
-## token 使用规则
+重点关注的高风险变量：
 
-- `ds_token` 必须由用户自己提供
-- 示例里的 `YOUR_DS_TOKEN` 只是占位符
-- 不要把某个固定国家的真实 token 写进 skill、n8n 节点或示例文档
-- 同一个动作在不同用户下的可见项目和可执行权限，取决于该用户 token 本身
+- `src`
+- `db`
+- `dt`
+- `full`
+- `partition`
+- `complement`
 
-## 标准 webhook body
+如果任务脚本还引用了 `${src}`、`${db}`、`${dt}`、`${full}` 等变量，但工作流级参数已经为空：
 
-```json
-{
-  "source": "codex-skill",
-  "country": "mx",
-  "action": "append_task",
-  "ds_token": "user-provided-token",
-  "request_id": "20260610-001",
-  "payload": {
-    "project_code": "13068695921632",
-    "workflow_code": "174599383687393",
-    "task_type": "SQL",
-    "task_name": "测试2",
-    "template_task_name": "dwd_okr_dashboard_wide_app",
-    "sql": "select 2"
-  }
-}
-```
+- 禁止继续执行修改类动作
+- 先恢复 `t_ds_workflow_definition_log` 中历史版本的 `global_params`
+- 恢复完成后再做下线、删除或新增
 
-## n8n 标准化后字段
+典型故障现象：
 
-`解析并标准化请求` 节点通常会额外产出：
+- 任务日志出现 `--src= --db= --dt= --full=`
+- 同步任务报 `get table setting error,no data`
 
-- `payload_json`
-- `payload_b64`
-- `valid`
-- `errors`
+## 动作与字段
 
-国家执行节点通常实际消费：
+### `list_projects`
 
-- `country`
-- `action`
-- `ds_token`
-- `request_id`
-- `payload_b64`
+可选：
+- `page_no`
+- `page_size`
+- `search_val`
 
-## 实例动作
+### `list_workflows`
 
-### `retry_instance`
+可选：
+- `project_code`
+- `page_no`
+- `page_size`
+- `search_val`
 
-用于对失败工作流实例执行“失败任务重跑”。
+### `get_workflow`
 
-最小 payload：
+必填其一：
+- `workflow_code`
+- `workflow_name`
 
-```json
-{
-  "project_code": "13068695921632",
-  "instance_id": "2614176"
-}
-```
+可选：
+- `project_code`
 
-## 任务追加动作
+### `online_workflow`
+
+必填：
+- `workflow_code`
+
+可选：
+- `project_code`
+
+### `offline_workflow`
+
+必填：
+- `workflow_code`
+
+可选：
+- `project_code`
+
+### `trigger_workflow`
+
+必填：
+- `workflow_code`
+
+可选：
+- `project_code`
+- `start_node_list`
+- `schedule_time`
+- `custom_params`
+
+### `list_instances`
+
+可选：
+- `project_code`
+- `state_type`
+- `page_no`
+- `page_size`
+- `search_val`
+
+### `get_instance`
+
+必填：
+- `instance_id`
+
+可选：
+- `project_code`
+
+### `dump_workflow_graph`
+
+必填：
+- `workflow_code`
+
+可选：
+- `project_code`
+
+返回重点：
+- `workflow_summary`
+- `task_definitions`
+- `task_relations`
+- `locations`
 
 ### `append_task`
+
+推荐通用入口。
 
 必填：
 - `project_code`
@@ -114,9 +186,9 @@
 - `template_task_name`
 
 按任务类型补充：
-- SQL:
+- `task_type = SQL`
   - `sql`
-- SHELL:
+- `task_type = SHELL`
   - `script`
 
 可选：
@@ -132,114 +204,84 @@
 
 ### `append_sql_task`
 
-等价于 `append_task + task_type=SQL`
+与 `append_task + task_type=SQL` 等价。
 
-### `append_shell_task`
+必填：
+- `project_code`
+- `workflow_code`
+- `task_name`
+- `sql`
 
-等价于 `append_task + task_type=SHELL`
-
-### `delete_task`
-
-按任务名或任务 code 删除工作流中的已有节点。
-
-最小 payload：
-
-```json
-{
-  "project_code": "13068695921632",
-  "workflow_code": "175767388280714",
-  "task_name": "dwd_ad_fb_campaing_get"
-}
-```
-
-### `disable_task`
-
-按任务名或任务 code 精确下线工作流中的已有任务节点，但不删除节点。
-
-最小 payload：
-
-```json
-{
-  "project_code": "13068695921632",
-  "workflow_code": "13068714127712",
-  "task_name": "ods_app_user"
-}
-```
+推荐：
+- `template_task_name`
 
 可选：
-
-- `task_code`
+- `sql_type`
+- `upstream_task_name`
+- `upstream_task_code`
 - `restore_original_state`
 - `auto_offline`
 
-说明：
+### `append_shell_task`
 
-- `disable_task` 适合“批量精确下线任务”
-- 推荐逐条发送，避免前缀匹配误伤
-- 如果需要保持工作流原有上下线状态，建议同时传：
-  - `restore_original_state=true`
-  - `auto_offline=true`
-- 如果目标是删除节点而不是下线节点，应改用 `delete_task`
+与 `append_task + task_type=SHELL` 等价。
 
-### `disable_tasks_except`
+必填：
+- `project_code`
+- `workflow_code`
+- `task_name`
+- `script`
 
-用于“保留白名单任务，其余批量下线”。
+推荐：
+- `template_task_name`
 
-最小 payload：
+可选：
+- `upstream_task_name`
+- `upstream_task_code`
+- `restore_original_state`
+- `auto_offline`
 
-```json
-{
-  "project_code": "13068695921632",
-  "workflow_code": "17480254697952",
-  "keep_task_names": [
-    "ods_msgsvr_ivr_account",
-    "ods_msgsvr_ivr_app_account"
-  ]
-}
-```
+### `disable_task`
 
-## 固定操作模板：批量精确下线任务
+用于精确下线单个任务。
 
-当用户给出一组任务名，希望“全部下线但不要删除”时，推荐按下面固定模板操作：
+必填：
+- `project_code`
+- `workflow_code`
+- `task_name` 或 `task_code`
 
-1. 先查询这些任务分别位于哪些工作流
-2. 确认每个命中的：
-   - `project_code`
-   - `workflow_code`
-   - `task_name`
-3. 对每一条命中记录逐条调用 `disable_task`
-4. 最后再复查 `flag/version` 或在 DS UI 中确认节点已下线
+可选：
+- `restore_original_state`
+- `auto_offline`
 
-推荐请求体：
+返回重点：
+- `task_name`
+- `task_code`
+- `original_release_state`
+- `original_schedule_release_state`
+- `restored_original_state`
+- `restored_original_schedule_state`
 
-```json
-{
-  "source": "codex-skill",
-  "country": "mx",
-  "action": "disable_task",
-  "ds_token": "user-provided-token",
-  "request_id": "mx-disable-exact-001",
-  "payload": {
-    "project_code": "13068695921632",
-    "workflow_code": "13068714127712",
-    "task_name": "ods_app_user",
-    "restore_original_state": true,
-    "auto_offline": true
-  }
-}
-```
+## `sql_type` 兼容规则
 
-## `sql_type` 兼容
+当前网关兼容以下写法：
 
-- 查询型：`0 / query / select / read`
-- 执行型：`1 / non_query / non-query / update / write / execute`
+| 输入 | 含义 |
+|---|---|
+| `0` | 查询型 SQL |
+| `query` | 查询型 SQL |
+| `select` | 查询型 SQL |
+| `read` | 查询型 SQL |
+| `1` | 执行型 SQL |
+| `non_query` | 执行型 SQL |
+| `non-query` | 执行型 SQL |
+| `update` | 执行型 SQL |
+| `write` | 执行型 SQL |
+| `execute` | 执行型 SQL |
 
-说明：
-
-- 当前 DS UI 中部分环境会显示为数字值，所以看到 `0` 是正常的
-- 如果追加的是 SQL 任务，建议优先传语义化值 `query` 或 `execute`
-- gateway 会统一做兼容转换
-- 如果追加的是 SHELL 任务，应改用 `task_type=SHELL` 并传 `script`，不使用 `sql_type`
+如果不显式传：
+- 以 `select / with / show / desc / explain` 开头，默认 `0`
+- 其他默认 `1`
 
 ## 返回格式
 
@@ -249,20 +291,12 @@
 {
   "success": true,
   "country": "mx",
-  "action": "dump_workflow_graph",
-  "request_id": "mx-001",
+  "action": "append_task",
+  "request_id": "mx-add-001",
   "data": {},
   "error": null
 }
 ```
-
-## 安全边界
-
-- `ds_token` 必须由用户提供
-- n8n 和远端网关只使用调用者提供的 token
-- 允许删除任务节点
-- 禁止删除项目
-- 禁止删除工作流
 
 失败：
 
@@ -271,11 +305,25 @@
   "success": false,
   "country": "mx",
   "action": "append_task",
-  "request_id": "mx-002",
+  "request_id": "mx-add-002",
   "data": null,
   "error": {
     "code": "INVALID_REQUEST",
-    "message": "unsupported action: append_task"
+    "message": "task_name is required"
   }
 }
 ```
+
+## 安全边界
+
+- `ds_token` 必须由用户提供
+- n8n 和远端网关只使用调用者提供的 token
+- 不在 skill 中保存 token
+- 不自动放大权限
+
+## 当前不覆盖
+
+- `create_workflow`
+- `update_workflow` 的完整 DAG 设计器能力
+- 资源中心文件上传
+- 非 SQL / SHELL 的自动追加模板（如 PYTHON / SPARK / HTTP）

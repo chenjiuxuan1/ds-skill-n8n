@@ -1,22 +1,19 @@
 # Examples
 
-先说明两点：
-
-- 所有示例里的 `YOUR_DS_TOKEN` 都必须替换成调用人自己的 DS token
-- n8n 只透传这个 token 对应的权限，不会自动放大范围
-
-## 查询项目
+## 1. 查询中国工作流列表
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
   --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
-  --country mx \
-  --action list_projects \
+  --country cn \
+  --action list_workflows \
   --ds-token "YOUR_DS_TOKEN" \
-  --search-val "墨西哥数仓-工作流"
+  --project-code 158514956085248 \
+  --page-no 1 \
+  --page-size 20
 ```
 
-## 导出工作流 DAG
+## 2. 查询墨西哥工作流 DAG 结构
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -24,37 +21,23 @@ python3 scripts/build_ds_webhook_payload.py \
   --country mx \
   --action dump_workflow_graph \
   --ds-token "YOUR_DS_TOKEN" \
-  --project-code 13068695921632 \
+  --project-code 19427088052704 \
   --workflow-code 174599383687393
 ```
 
-## 查询失败实例
+## 3. 触发中国工作流
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
   --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
-  --country mx \
-  --action list_instances \
+  --country cn \
+  --action trigger_workflow \
   --ds-token "YOUR_DS_TOKEN" \
-  --project-code 19427088052704 \
-  --state-type FAILURE \
-  --page-no 1 \
-  --page-size 20
+  --workflow-code 158515019593728 \
+  --custom-params-json '{"dt":"2026-06-10"}'
 ```
 
-## 重跑失败实例
-
-```bash
-python3 scripts/build_ds_webhook_payload.py \
-  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
-  --country mx \
-  --action retry_instance \
-  --ds-token "YOUR_DS_TOKEN" \
-  --project-code 19427088052704 \
-  --instance-id 2614176
-```
-
-## 追加 SQL 任务
+## 4. 追加 SQL 任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -71,7 +54,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --sql-type query
 ```
 
-## 追加 SHELL 任务
+## 5. 追加 SHELL 任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -79,60 +62,57 @@ python3 scripts/build_ds_webhook_payload.py \
   --country mx \
   --action append_task \
   --ds-token "YOUR_DS_TOKEN" \
-  --project-code 13068695921632 \
-  --workflow-code 175767388280714 \
-  --task-type SHELL \
-  --task-name "dwd_ad_fb_advertiser_get" \
-  --template-task-name "dwd_ad_fb_ad_set_get" \
-  --script 'python3 $WATTREL_HOME/console.py etl --table=dwd_ad_fb_advertiser_get'
-```
-
-## 删除任务
-
-```bash
-python3 scripts/build_ds_webhook_payload.py \
-  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
-  --country mx \
-  --action delete_task \
-  --ds-token "YOUR_DS_TOKEN" \
   --project-code 19427088052704 \
   --workflow-code 174599383687393 \
-  --task-name "测试2"
+  --task-type SHELL \
+  --task-name "测试shell" \
+  --template-task-name "现有SHELL模板任务名" \
+  --script "echo hello"
 ```
 
-## 精确下线单个任务
+## 6. 查询实例详情
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country pk \
+  --action get_instance \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 158514956085248 \
+  --instance-id 1040772
+```
+
+## 7. 下线任务前的安全检查建议
+
+对于同步类工作流，在执行以下动作前：
+
+- `disable_task`
+- `disable_tasks_except`
+- `delete_task`
+- `append_task`
+
+建议先查询工作流详情，确认工作流级参数没有被清空：
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
   --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
   --country mx \
-  --action disable_task \
+  --action dump_workflow_graph \
   --ds-token "YOUR_DS_TOKEN" \
   --project-code 13068695921632 \
-  --workflow-code 13068714127712 \
-  --task-name "ods_app_user" \
-  --restore-original-state \
-  --auto-offline
+  --workflow-code 20515301105637
 ```
 
-## 批量精确下线任务
+人工检查重点：
 
-当用户给的是一组明确任务名，推荐先查工作流归属，再逐条发送 `disable_task`。
+- `raw_workflow_detail.workflowDefinition.globalParams`
+- `raw_workflow_detail.workflowDefinition.globalParamList`
 
-例如：
+如果这里已经是 `[]`，但任务脚本仍然包含：
 
-```bash
-python3 scripts/build_ds_webhook_payload.py \
-  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
-  --country mx \
-  --action disable_task \
-  --ds-token "YOUR_DS_TOKEN" \
-  --request-id "mx-disable-exact-001" \
-  --project-code 13068695921632 \
-  --workflow-code 13068714127712 \
-  --task-name "ods_app_user" \
-  --restore-original-state \
-  --auto-offline
-```
+- `${src}`
+- `${db}`
+- `${dt}`
+- `${full}`
 
-接着把第二个、第三个任务继续按同样模板逐条发出即可。
+则不要继续修改工作流定义，先恢复历史版本参数。
