@@ -1,6 +1,6 @@
 ---
 name: ds-scheduler
-description: Use the n8n-based DolphinScheduler gateway to inspect and operate multi-country DS 3.4 workflows and instances for cn, ine, mx, ph, pk, and th. Use when the user wants Codex to build or send standardized n8n webhook requests for listing projects/workflows, reading workflow or instance details, online/offline, trigger, dumping workflow DAG structure, or appending SQL/SHELL tasks through the country jump-host gateway.
+description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, tasks, datasources, or instances through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th.
 ---
 
 # DS Scheduler
@@ -15,12 +15,23 @@ description: Use the n8n-based DolphinScheduler gateway to inspect and operate m
 - 用户要做：
   - `list_projects`
   - `list_workflows`
+  - `list_schedules`
+  - `get_schedule`
+  - `create_schedule`
+  - `update_schedule`
+  - `online_schedule`
+  - `offline_schedule`
+  - `schedule_blast_radius`
   - `get_workflow`
   - `online_workflow`
   - `offline_workflow`
   - `trigger_workflow`
   - `list_instances`
   - `get_instance`
+  - `retry_instance`
+  - `list_datasources`
+  - `get_datasource`
+  - `extract_task_runtime_config`
   - `dump_workflow_graph`
   - `append_task`
   - `append_sql_task`

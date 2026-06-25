@@ -14,6 +14,13 @@ COUNTRIES = {"cn", "ine", "mx", "ph", "pk", "th"}
 ACTIONS = {
     "list_projects",
     "list_workflows",
+    "list_schedules",
+    "get_schedule",
+    "create_schedule",
+    "update_schedule",
+    "online_schedule",
+    "offline_schedule",
+    "schedule_blast_radius",
     "get_workflow",
     "online_workflow",
     "offline_workflow",
@@ -24,10 +31,13 @@ ACTIONS = {
     "append_task",
     "append_sql_task",
     "append_shell_task",
-    "disable_tasks_except",
     "disable_task",
+    "disable_tasks_except",
     "delete_task",
     "dump_workflow_graph",
+    "list_datasources",
+    "get_datasource",
+    "extract_task_runtime_config",
 }
 
 
@@ -50,7 +60,12 @@ def _normalize_task_type(task_type: str | None, action: str) -> str:
     if not task_type:
         return ""
     normalized = task_type.strip().upper()
-    aliases = {"SQL": "SQL", "SHELL": "SHELL", "SCRIPT": "SHELL", "COMMAND": "SHELL"}
+    aliases = {
+        "SQL": "SQL",
+        "SHELL": "SHELL",
+        "SCRIPT": "SHELL",
+        "COMMAND": "SHELL",
+    }
     return aliases.get(normalized, normalized)
 
 
@@ -61,7 +76,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
 
     task_type = _normalize_task_type(args.task_type, args.action)
 
-    if args.action in {"online_workflow", "offline_workflow", "trigger_workflow", "dump_workflow_graph"}:
+    if args.action in {"online_workflow", "offline_workflow", "trigger_workflow", "dump_workflow_graph", "schedule_blast_radius"}:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
@@ -70,6 +85,29 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.instance_id), "retry_instance requires --instance-id")
     if args.action == "get_workflow":
         _require(bool(args.workflow_code or args.workflow_name), "get_workflow requires --workflow-code or --workflow-name")
+    if args.action == "get_schedule":
+        _require(bool(args.project_code), "get_schedule requires --project-code")
+        _require(bool(args.schedule_id or args.workflow_code or args.workflow_name), "get_schedule requires --schedule-id or --workflow-code or --workflow-name")
+    if args.action in {"create_schedule", "update_schedule"}:
+        _require(bool(args.project_code), f"{args.action} requires --project-code")
+        _require(bool(args.workflow_code or args.action == 'update_schedule'), f"{args.action} requires --workflow-code")
+        if args.action == "update_schedule":
+            _require(bool(args.schedule_id or args.workflow_code), "update_schedule requires --schedule-id or --workflow-code")
+        _require(bool(args.schedule_json or args.crontab), f"{args.action} requires --schedule-json or --crontab")
+    if args.action in {"online_schedule", "offline_schedule"}:
+        _require(bool(args.project_code), f"{args.action} requires --project-code")
+        _require(bool(args.schedule_id or args.workflow_code), f"{args.action} requires --schedule-id or --workflow-code")
+    if args.action == "extract_task_runtime_config":
+        _require(bool(args.project_code), "extract_task_runtime_config requires --project-code")
+        _require(bool(args.workflow_code), "extract_task_runtime_config requires --workflow-code")
+        _require(bool(args.task_name or args.task_code), "extract_task_runtime_config requires --task-name or --task-code")
+    if args.action == "get_datasource":
+        _require(bool(args.datasource or args.datasource_id), "get_datasource requires --datasource or --datasource-id")
+    if args.action in {"disable_task", "delete_task"}:
+        _require(bool(args.project_code), f"{args.action} requires --project-code")
+        _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
+        _require(bool(args.task_name or args.task_code), f"{args.action} requires --task-name or --task-code")
+
     if args.action in {"append_task", "append_sql_task", "append_shell_task"}:
         _require(bool(args.project_code), f"{args.action} requires --project-code")
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
@@ -90,14 +128,6 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             bool(keep_task_names or keep_task_codes),
             "disable_tasks_except requires --keep-task-names-json or --keep-task-codes-json",
         )
-    if args.action == "delete_task":
-        _require(bool(args.project_code), "delete_task requires --project-code")
-        _require(bool(args.workflow_code), "delete_task requires --workflow-code")
-        _require(bool(args.task_name or args.task_code), "delete_task requires --task-name or --task-code")
-    if args.action == "disable_task":
-        _require(bool(args.project_code), "disable_task requires --project-code")
-        _require(bool(args.workflow_code), "disable_task requires --workflow-code")
-        _require(bool(args.task_name or args.task_code), "disable_task requires --task-name or --task-code")
 
     payload = {
         "source": "codex-skill",
@@ -112,6 +142,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "instance_id": args.instance_id or "",
             "start_node_list": args.start_node_list or "",
             "schedule_time": args.schedule_time or "",
+            "schedule_id": args.schedule_id or "",
             "state_type": args.state_type or "",
             "search_val": args.search_val or "",
             "page_no": args.page_no,
@@ -120,9 +151,28 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         },
     }
 
-    extra = payload["payload"]
+    extra_payload = payload["payload"]
+    if args.action in {"create_schedule", "update_schedule", "online_schedule", "offline_schedule", "get_schedule", "schedule_blast_radius"}:
+        extra_payload.update(
+            {
+                "schedule_json": _load_json(args.schedule_json, {}) if args.schedule_json else "",
+                "crontab": args.crontab or "",
+                "start_time": args.start_time or "",
+                "end_time": args.end_time or "",
+                "timezone_id": args.timezone_id or "",
+                "warning_type": args.warning_type or "",
+                "warning_group_id": args.warning_group_id or "",
+                "failure_strategy": args.failure_strategy or "",
+                "process_instance_priority": args.process_instance_priority or "",
+                "worker_group": args.worker_group or "",
+                "tenant_code": args.tenant_code or "",
+                "environment_code": args.environment_code or "",
+                "release_state": args.release_state or "",
+            }
+        )
+
     if args.action in {"append_task", "append_sql_task", "append_shell_task"}:
-        extra.update(
+        extra_payload.update(
             {
                 "task_type": task_type,
                 "task_name": args.task_name or "",
@@ -134,18 +184,29 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "datasource": args.datasource or "",
                 "environment_code": args.environment_code or "",
                 "tenant_code": args.tenant_code or "",
-            "upstream_task_name": args.upstream_task_name or "",
-            "upstream_task_code": args.upstream_task_code or "",
-            "task_code": args.task_code or "",
-        }
+                "upstream_task_name": args.upstream_task_name or "",
+                "upstream_task_code": args.upstream_task_code or "",
+            }
         )
         if args.restore_original_state is not None:
-            extra["restore_original_state"] = args.restore_original_state
+            extra_payload["restore_original_state"] = args.restore_original_state
         if args.auto_offline is not None:
-            extra["auto_offline"] = args.auto_offline
+            extra_payload["auto_offline"] = args.auto_offline
+
+    if args.action in {"disable_task", "delete_task"}:
+        extra_payload.update(
+            {
+                "task_name": args.task_name or "",
+                "task_code": args.task_code or "",
+            }
+        )
+        if args.restore_original_state is not None:
+            extra_payload["restore_original_state"] = args.restore_original_state
+        if args.auto_offline is not None:
+            extra_payload["auto_offline"] = args.auto_offline
 
     if args.action == "disable_tasks_except":
-        extra.update(
+        extra_payload.update(
             {
                 "keep_task_names": _load_json(args.keep_task_names_json, []),
                 "keep_task_codes": _load_json(args.keep_task_codes_json, []),
@@ -153,21 +214,9 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             }
         )
         if args.restore_original_state is not None:
-            extra["restore_original_state"] = args.restore_original_state
+            extra_payload["restore_original_state"] = args.restore_original_state
         if args.auto_offline is not None:
-            extra["auto_offline"] = args.auto_offline
-
-    if args.action in {"delete_task", "disable_task"}:
-        extra.update(
-            {
-                "task_name": args.task_name or "",
-                "task_code": args.task_code or "",
-            }
-        )
-        if args.restore_original_state is not None:
-            extra["restore_original_state"] = args.restore_original_state
-        if args.auto_offline is not None:
-            extra["auto_offline"] = args.auto_offline
+            extra_payload["auto_offline"] = args.auto_offline
 
     return payload
 
@@ -192,6 +241,7 @@ def main() -> None:
     parser.add_argument("--workflow-code")
     parser.add_argument("--workflow-name")
     parser.add_argument("--instance-id")
+    parser.add_argument("--schedule-id")
     parser.add_argument("--start-node-list")
     parser.add_argument("--schedule-time")
     parser.add_argument("--state-type")
@@ -207,8 +257,20 @@ def main() -> None:
     parser.add_argument("--script")
     parser.add_argument("--sql-type")
     parser.add_argument("--datasource")
+    parser.add_argument("--datasource-id")
     parser.add_argument("--environment-code")
     parser.add_argument("--tenant-code")
+    parser.add_argument("--worker-group")
+    parser.add_argument("--warning-type")
+    parser.add_argument("--warning-group-id")
+    parser.add_argument("--failure-strategy")
+    parser.add_argument("--process-instance-priority")
+    parser.add_argument("--release-state")
+    parser.add_argument("--schedule-json")
+    parser.add_argument("--crontab")
+    parser.add_argument("--start-time")
+    parser.add_argument("--end-time")
+    parser.add_argument("--timezone-id")
     parser.add_argument("--upstream-task-name")
     parser.add_argument("--upstream-task-code")
     parser.add_argument("--task-code")

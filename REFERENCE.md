@@ -40,12 +40,20 @@
 
 - `list_projects`
 - `list_workflows`
+- `list_schedules`
+- `get_schedule`
+- `create_schedule`
+- `update_schedule`
+- `online_schedule`
+- `offline_schedule`
+- `schedule_blast_radius`
 - `get_workflow`
 - `online_workflow`
 - `offline_workflow`
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `retry_instance`
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
@@ -53,6 +61,9 @@
 - `disable_tasks_except`
 - `delete_task`
 - `dump_workflow_graph`
+- `list_datasources`
+- `get_datasource`
+- `extract_task_runtime_config`
 
 ## 修改类动作的前置校验
 
@@ -107,6 +118,88 @@
 - `page_size`
 - `search_val`
 
+### `list_schedules`
+
+必填：
+- `project_code`
+
+可选：
+- `workflow_code`
+- `schedule_id`
+- `page_no`
+- `page_size`
+- `search_val`
+
+### `get_schedule`
+
+必填：
+- `project_code`
+
+必填其一：
+- `schedule_id`
+- `workflow_code`
+- `workflow_name`
+
+### `create_schedule`
+
+必填：
+- `project_code`
+- `workflow_code`
+
+至少提供其一：
+- `schedule_json`
+- `crontab`
+
+常用可选：
+- `start_time`
+- `end_time`
+- `timezone_id`
+- `warning_type`
+- `warning_group_id`
+- `failure_strategy`
+- `process_instance_priority`
+- `worker_group`
+- `tenant_code`
+- `environment_code`
+- `custom_params`
+
+### `update_schedule`
+
+必填：
+- `project_code`
+
+必填其一：
+- `schedule_id`
+- `workflow_code`
+
+至少提供其一：
+- `schedule_json`
+- `crontab`
+
+### `online_schedule`
+
+必填：
+- `project_code`
+
+必填其一：
+- `schedule_id`
+- `workflow_code`
+
+### `offline_schedule`
+
+必填：
+- `project_code`
+
+必填其一：
+- `schedule_id`
+- `workflow_code`
+
+### `schedule_blast_radius`
+
+必填：
+- `project_code`
+- `workflow_code`
+
 ### `get_workflow`
 
 必填其一：
@@ -160,6 +253,12 @@
 可选：
 - `project_code`
 
+### `retry_instance`
+
+必填：
+- `project_code`
+- `instance_id`
+
 ### `dump_workflow_graph`
 
 必填：
@@ -173,6 +272,29 @@
 - `task_definitions`
 - `task_relations`
 - `locations`
+
+### `list_datasources`
+
+可选：
+- `page_no`
+- `page_size`
+- `search_val`
+
+### `get_datasource`
+
+必填其一：
+- `datasource`
+- `datasource_id`
+
+### `extract_task_runtime_config`
+
+必填：
+- `project_code`
+- `workflow_code`
+
+必填其一：
+- `task_name`
+- `task_code`
 
 ### `append_task`
 
