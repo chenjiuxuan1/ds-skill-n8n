@@ -2,7 +2,7 @@
 
 开发人员：陈江川
 
-更新时间：2026-06-11
+更新时间：2026-06-25
 
 本文面向使用者和 Codex 操作者，只说明 DS 调度 skill 的安装方式、n8n 中转链路、token 使用要求、常用动作和典型使用场景。更底层的接口字段、payload 结构和示例命令，请结合仓库中的 [README.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/README.md)、[REFERENCE.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/REFERENCE.md)、[EXAMPLES.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/EXAMPLES.md) 一起使用。
 
@@ -50,6 +50,9 @@
 | `append_task` | 通用追加任务 |
 | `append_sql_task` | 追加 SQL 任务 |
 | `append_shell_task` | 追加 SHELL 任务 |
+| `update_task` | 通用修改已有任务 |
+| `update_sql_task` | 修改已有 SQL 任务内容 |
+| `update_shell_task` | 修改已有 SHELL 任务脚本内容 |
 | `disable_task` | 下线已有任务但不删除节点 |
 | `disable_tasks_except` | 保留白名单，其余任务批量下线 |
 | `delete_task` | 删除已有任务 |
@@ -68,6 +71,7 @@
 - 拉取失败任务的运行日志
 - 对失败实例执行重跑
 - 在某个工作流里新增一个 SQL 或 SHELL 节点
+- 修改已有 SHELL 任务脚本内容
 - 删除一个误加的任务节点
 - 导出工作流 DAG，确认节点顺序、坐标和上下游关系
 

@@ -27,12 +27,15 @@ ACTIONS = {
     "trigger_workflow",
     "list_instances",
     "get_instance",
+    "list_task_instances",
+    "get_task_log",
     "retry_instance",
     "append_task",
     "append_sql_task",
     "append_shell_task",
     "update_task",
     "update_sql_task",
+    "update_shell_task",
     "disable_task",
     "disable_tasks_except",
     "delete_task",
@@ -59,6 +62,8 @@ def _normalize_task_type(task_type: str | None, action: str) -> str:
         return "SQL"
     if action == "append_shell_task":
         return "SHELL"
+    if action == "update_shell_task":
+        return "SHELL"
     if not task_type:
         return ""
     normalized = task_type.strip().upper()
@@ -82,6 +87,23 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
+    if args.action == "list_task_instances":
+        _require(bool(args.project_code), "list_task_instances requires --project-code")
+        _require(
+            bool(args.process_instance_id or args.instance_id),
+            "list_task_instances requires --process-instance-id or --instance-id",
+        )
+    if args.action == "get_task_log":
+        _require(bool(args.project_code), "get_task_log requires --project-code")
+        if not args.task_instance_id:
+            _require(
+                bool(args.process_instance_id or args.instance_id),
+                "get_task_log requires --task-instance-id or --process-instance-id/--instance-id",
+            )
+            _require(
+                bool(args.task_name or args.task_code),
+                "get_task_log requires --task-name or --task-code when --task-instance-id is absent",
+            )
     if args.action == "retry_instance":
         _require(bool(args.project_code), "retry_instance requires --project-code")
         _require(bool(args.instance_id), "retry_instance requires --instance-id")
@@ -121,7 +143,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             _require(bool(args.sql), f"{args.action} requires --sql for SQL task")
         if task_type == "SHELL":
             _require(bool(args.script), f"{args.action} requires --script for SHELL task")
-    if args.action in {"update_task", "update_sql_task"}:
+    if args.action in {"update_task", "update_sql_task", "update_shell_task"}:
         _require(bool(args.project_code), f"{args.action} requires --project-code")
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
         _require(bool(args.task_name or args.task_code), f"{args.action} requires --task-name or --task-code")
@@ -129,6 +151,11 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             _require(
                 bool(args.sql or args.task_params_patch_json),
                 "update_sql_task requires --sql or --task-params-patch-json",
+            )
+        if args.action == "update_shell_task":
+            _require(
+                bool(args.script or args.task_params_patch_json),
+                "update_shell_task requires --script or --task-params-patch-json",
             )
     if args.action == "disable_tasks_except":
         _require(bool(args.project_code), "disable_tasks_except requires --project-code")
@@ -151,6 +178,8 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "workflow_code": args.workflow_code or "",
             "workflow_name": args.workflow_name or "",
             "instance_id": args.instance_id or "",
+            "process_instance_id": args.process_instance_id or "",
+            "task_instance_id": args.task_instance_id or "",
             "start_node_list": args.start_node_list or "",
             "schedule_time": args.schedule_time or "",
             "schedule_id": args.schedule_id or "",
@@ -204,7 +233,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         if args.auto_offline is not None:
             extra_payload["auto_offline"] = args.auto_offline
 
-    if args.action in {"update_task", "update_sql_task"}:
+    if args.action in {"update_task", "update_sql_task", "update_shell_task"}:
         extra_payload.update(
             {
                 "task_name": args.task_name or "",
@@ -283,6 +312,8 @@ def main() -> None:
     parser.add_argument("--workflow-code")
     parser.add_argument("--workflow-name")
     parser.add_argument("--instance-id")
+    parser.add_argument("--process-instance-id")
+    parser.add_argument("--task-instance-id")
     parser.add_argument("--schedule-id")
     parser.add_argument("--start-node-list")
     parser.add_argument("--schedule-time")

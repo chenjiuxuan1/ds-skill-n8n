@@ -152,7 +152,21 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-local-params-json '[{"prop":"biz_date","direct":"IN","type":"VARCHAR","value":"${system.biz.date}"}]'
 ```
 
-## 11. 创建定时
+## 11. 修改已有 SHELL 任务脚本
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action update_shell_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --workflow-code 174599383687393 \
+  --task-name "load_dim_account_shell" \
+  --script "bash /data/apps/ds/load_dim_account.sh ${biz_date}"
+```
+
+## 12. 创建定时
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -169,7 +183,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --worker-group default
 ```
 
-## 12. 上线 / 下线定时
+## 13. 上线 / 下线定时
 
 上线：
 
@@ -195,7 +209,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 158515019593728
 ```
 
-## 13. 精确下线单个任务
+## 14. 精确下线单个任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -208,7 +222,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-name "ods_msgsvr_ivr_account"
 ```
 
-## 14. 下线任务前的安全检查建议
+## 15. 下线任务前的安全检查建议
 
 对于同步类工作流，在执行以下动作前：
 

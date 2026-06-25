@@ -37,6 +37,7 @@ const ACTIONS = new Set([
   'append_shell_task',
   'update_task',
   'update_sql_task',
+  'update_shell_task',
   'disable_tasks_except',
   'disable_task',
   'delete_task',
@@ -225,7 +226,7 @@ if (['append_task', 'append_sql_task', 'append_shell_task'].includes(action)) {
   }
 }
 
-if (['update_task', 'update_sql_task'].includes(action)) {
+if (['update_task', 'update_sql_task', 'update_shell_task'].includes(action)) {
   if (!payload.project_code) errors.push(`${action} requires project_code`);
   if (!payload.workflow_code) errors.push(`${action} requires workflow_code`);
   if (!payload.task_name && !payload.task_code) {
@@ -233,6 +234,9 @@ if (['update_task', 'update_sql_task'].includes(action)) {
   }
   if (action === 'update_sql_task' && !payload.sql && !payload.task_params_patch.sql && !payload.task_params_patch.rawScript) {
     errors.push('update_sql_task requires sql or task_params_patch with sql/rawScript');
+  }
+  if (action === 'update_shell_task' && !payload.script && !payload.task_params_patch.rawScript) {
+    errors.push('update_shell_task requires script or task_params_patch.rawScript');
   }
 }
 

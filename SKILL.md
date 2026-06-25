@@ -40,6 +40,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `append_shell_task`
   - `update_task`
   - `update_sql_task`
+  - `update_shell_task`
   - `disable_task`
   - `disable_tasks_except`
   - `delete_task`
@@ -174,6 +175,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `append_shell_task`
 - `update_task`
 - `update_sql_task`
+- `update_shell_task`
 - `delete_task`
 - `disable_task`
 - `disable_tasks_except`
@@ -183,6 +185,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `append_sql_task` 是 `append_task` 的 SQL 特化入口
 - `append_shell_task` 是 `append_task` 的 SHELL 特化入口
 - `update_sql_task` 是 `update_task` 的 SQL 特化入口
+- `update_shell_task` 是 `update_task` 的 SHELL 特化入口
 - `disable_task` 用于精确下线单个任务，不再依赖任务名前缀匹配
 - `disable_tasks_except` 用于按任务名前缀圈定范围，然后保留白名单，其余统一禁用
 - 推荐优先使用 `append_task`，并显式传 `task_type`
@@ -203,6 +206,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `append_shell_task`
 - `update_task`
 - `update_sql_task`
+- `update_shell_task`
 - `delete_task`
 - `disable_task`
 - `disable_tasks_except`

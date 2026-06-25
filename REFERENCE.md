@@ -65,6 +65,7 @@
 - `append_shell_task`
 - `update_task`
 - `update_sql_task`
+- `update_shell_task`
 - `disable_task`
 - `disable_tasks_except`
 - `delete_task`
@@ -394,6 +395,22 @@
 
 与 `append_task + task_type=SHELL` 等价。
 
+必填：
+- `project_code`
+- `workflow_code`
+- `task_name`
+- `script`
+
+推荐：
+- `template_task_name`
+
+可选：
+- `task_description`
+- `upstream_task_name`
+- `upstream_task_code`
+- `restore_original_state`
+- `auto_offline`
+
 ### `update_task`
 
 必填：
@@ -440,15 +457,51 @@ SQL 任务附加可选：
 必填：
 - `project_code`
 - `workflow_code`
-- `task_name`
-- `script`
-
-推荐：
-- `template_task_name`
+- `task_name` 或 `task_code`
 
 可选：
-- `upstream_task_name`
-- `upstream_task_code`
+- `task_description`
+- `sql_type`
+- `datasource`
+- `datasource_id`
+- `local_params`
+- `task_local_params`
+- `replace_local_params`
+- `pre_statements`
+- `post_statements`
+- `task_params_patch`
+- `environment_code`
+- `tenant_code`
+- `restore_original_state`
+- `auto_offline`
+- SQL 任务告警相关字段：
+  - `title`
+  - `receivers`
+  - `receivers_cc`
+  - `show_type`
+  - `conn_params`
+
+### `update_shell_task`
+
+与 `update_task` 相同，但默认用于 SHELL 任务。
+
+至少提供其一：
+- `script`
+- `task_params_patch.rawScript`
+
+必填：
+- `project_code`
+- `workflow_code`
+- `task_name` 或 `task_code`
+
+可选：
+- `task_description`
+- `local_params`
+- `task_local_params`
+- `replace_local_params`
+- `task_params_patch`
+- `environment_code`
+- `tenant_code`
 - `restore_original_state`
 - `auto_offline`
 

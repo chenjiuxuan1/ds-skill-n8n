@@ -86,6 +86,7 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - `append_shell_task`
 - `update_task`
 - `update_sql_task`
+- `update_shell_task`
 - `disable_task`
 - `disable_tasks_except`
 - `delete_task`
