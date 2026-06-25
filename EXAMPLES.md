@@ -82,7 +82,92 @@ python3 scripts/build_ds_webhook_payload.py \
   --instance-id 1040772
 ```
 
-## 7. 下线任务前的安全检查建议
+## 7. 修改已有 SQL 任务内容
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action update_sql_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --workflow-code 174599383687393 \
+  --task-name "dwd_okr_dashboard_wide_app" \
+  --sql "select 2" \
+  --sql-type query
+```
+
+## 8. 给任务添加自定义参数
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action update_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --workflow-code 174599383687393 \
+  --task-name "dwd_okr_dashboard_wide_app" \
+  --task-local-params-json '[{"prop":"biz_date","direct":"IN","type":"VARCHAR","value":"${system.biz.date}"}]'
+```
+
+## 9. 创建定时
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country cn \
+  --action create_schedule \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 158514956085248 \
+  --workflow-code 158515019593728 \
+  --crontab "0 0 3 * * ? *" \
+  --start-time "2026-06-25 03:00:00" \
+  --failure-strategy CONTINUE \
+  --process-instance-priority MEDIUM \
+  --worker-group default
+```
+
+## 10. 上线 / 下线定时
+
+上线：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country cn \
+  --action online_schedule \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 158514956085248 \
+  --workflow-code 158515019593728
+```
+
+下线：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country cn \
+  --action offline_schedule \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 158514956085248 \
+  --workflow-code 158515019593728
+```
+
+## 11. 精确下线单个任务
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action disable_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --workflow-code 17480254697952 \
+  --task-name "ods_msgsvr_ivr_account"
+```
+
+## 12. 下线任务前的安全检查建议
 
 对于同步类工作流，在执行以下动作前：
 

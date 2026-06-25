@@ -36,8 +36,11 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `append_task`
   - `append_sql_task`
   - `append_shell_task`
+  - `update_task`
+  - `update_sql_task`
   - `disable_task`
   - `disable_tasks_except`
+  - `delete_task`
 - 用户希望由 Codex 输出标准 webhook body、`curl`、测试方式，或者直接根据现有 n8n 契约构造请求
 
 不适用：
@@ -89,6 +92,16 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `search_val`
 - `state_type`
 - `custom_params`
+- `schedule_id`
+- `crontab`
+- `schedule_json`
+- `start_time`
+- `end_time`
+- `warning_type`
+- `warning_group_id`
+- `failure_strategy`
+- `process_instance_priority`
+- `worker_group`
 
 新增任务相关：
 - `task_type`
@@ -99,6 +112,23 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `upstream_task_name` / `upstream_task_code`
 - `restore_original_state`
 - `auto_offline`
+
+修改已有任务相关：
+- `task_name` 或 `task_code`
+- `sql`
+- `script`
+- `sql_type`
+- `datasource`
+- `local_params` / `task_local_params`
+- `replace_local_params`
+- `pre_statements`
+- `post_statements`
+- `task_params_patch`
+- `title`
+- `receivers`
+- `receivers_cc`
+- `show_type`
+- `conn_params`
 
 ## 输出要求
 
@@ -136,6 +166,8 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `update_task`
+- `update_sql_task`
 - `delete_task`
 - `disable_task`
 - `disable_tasks_except`
@@ -144,6 +176,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 
 - `append_sql_task` 是 `append_task` 的 SQL 特化入口
 - `append_shell_task` 是 `append_task` 的 SHELL 特化入口
+- `update_sql_task` 是 `update_task` 的 SQL 特化入口
 - `disable_task` 用于精确下线单个任务，不再依赖任务名前缀匹配
 - `disable_tasks_except` 用于按任务名前缀圈定范围，然后保留白名单，其余统一禁用
 - 推荐优先使用 `append_task`，并显式传 `task_type`
@@ -162,6 +195,8 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `update_task`
+- `update_sql_task`
 - `delete_task`
 - `disable_task`
 - `disable_tasks_except`

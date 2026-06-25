@@ -57,6 +57,8 @@
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `update_task`
+- `update_sql_task`
 - `disable_task`
 - `disable_tasks_except`
 - `delete_task`
@@ -347,6 +349,49 @@
 ### `append_shell_task`
 
 与 `append_task + task_type=SHELL` 等价。
+
+### `update_task`
+
+必填：
+- `project_code`
+- `workflow_code`
+
+必填其一：
+- `task_name`
+- `task_code`
+
+常用可选：
+- `task_description`
+- `sql`
+- `script`
+- `sql_type`
+- `datasource`
+- `datasource_id`
+- `local_params`
+- `task_local_params`
+- `replace_local_params`
+- `pre_statements`
+- `post_statements`
+- `task_params_patch`
+- `environment_code`
+- `tenant_code`
+- `restore_original_state`
+- `auto_offline`
+
+SQL 任务附加可选：
+- `title`
+- `receivers`
+- `receivers_cc`
+- `show_type`
+- `conn_params`
+
+### `update_sql_task`
+
+与 `update_task` 相同，但默认用于 SQL 任务。
+
+至少提供其一：
+- `sql`
+- `task_params_patch`
 
 必填：
 - `project_code`

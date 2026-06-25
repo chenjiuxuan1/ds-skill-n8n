@@ -31,6 +31,8 @@ ACTIONS = {
     "append_task",
     "append_sql_task",
     "append_shell_task",
+    "update_task",
+    "update_sql_task",
     "disable_task",
     "disable_tasks_except",
     "delete_task",
@@ -119,6 +121,15 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             _require(bool(args.sql), f"{args.action} requires --sql for SQL task")
         if task_type == "SHELL":
             _require(bool(args.script), f"{args.action} requires --script for SHELL task")
+    if args.action in {"update_task", "update_sql_task"}:
+        _require(bool(args.project_code), f"{args.action} requires --project-code")
+        _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
+        _require(bool(args.task_name or args.task_code), f"{args.action} requires --task-name or --task-code")
+        if args.action == "update_sql_task":
+            _require(
+                bool(args.sql or args.task_params_patch_json),
+                "update_sql_task requires --sql or --task-params-patch-json",
+            )
     if args.action == "disable_tasks_except":
         _require(bool(args.project_code), "disable_tasks_except requires --project-code")
         _require(bool(args.workflow_code), "disable_tasks_except requires --workflow-code")
@@ -186,6 +197,37 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "tenant_code": args.tenant_code or "",
                 "upstream_task_name": args.upstream_task_name or "",
                 "upstream_task_code": args.upstream_task_code or "",
+            }
+        )
+        if args.restore_original_state is not None:
+            extra_payload["restore_original_state"] = args.restore_original_state
+        if args.auto_offline is not None:
+            extra_payload["auto_offline"] = args.auto_offline
+
+    if args.action in {"update_task", "update_sql_task"}:
+        extra_payload.update(
+            {
+                "task_name": args.task_name or "",
+                "task_code": args.task_code or "",
+                "task_description": args.task_description or "",
+                "sql": args.sql or "",
+                "script": args.script or "",
+                "sql_type": args.sql_type if args.sql_type is not None else "",
+                "datasource": args.datasource or "",
+                "datasource_id": args.datasource_id or "",
+                "environment_code": args.environment_code or "",
+                "tenant_code": args.tenant_code or "",
+                "local_params": _load_json(args.local_params_json, []),
+                "task_local_params": _load_json(args.task_local_params_json, []),
+                "replace_local_params": args.replace_local_params,
+                "pre_statements": _load_json(args.pre_statements_json, []),
+                "post_statements": _load_json(args.post_statements_json, []),
+                "task_params_patch": _load_json(args.task_params_patch_json, {}),
+                "title": args.title or "",
+                "receivers": args.receivers or "",
+                "receivers_cc": args.receivers_cc or "",
+                "show_type": args.show_type or "",
+                "conn_params": _load_json(args.conn_params_json, {}),
             }
         )
         if args.restore_original_state is not None:
@@ -274,6 +316,17 @@ def main() -> None:
     parser.add_argument("--upstream-task-name")
     parser.add_argument("--upstream-task-code")
     parser.add_argument("--task-code")
+    parser.add_argument("--local-params-json")
+    parser.add_argument("--task-local-params-json")
+    parser.add_argument("--replace-local-params", action="store_true")
+    parser.add_argument("--pre-statements-json")
+    parser.add_argument("--post-statements-json")
+    parser.add_argument("--task-params-patch-json")
+    parser.add_argument("--title")
+    parser.add_argument("--receivers")
+    parser.add_argument("--receivers-cc")
+    parser.add_argument("--show-type")
+    parser.add_argument("--conn-params-json")
     parser.add_argument("--keep-task-names-json")
     parser.add_argument("--keep-task-codes-json")
     parser.add_argument("--target-task-name-prefixes-json")

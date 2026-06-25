@@ -13,6 +13,13 @@ const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
   'list_projects',
   'list_workflows',
+  'list_schedules',
+  'get_schedule',
+  'create_schedule',
+  'update_schedule',
+  'online_schedule',
+  'offline_schedule',
+  'schedule_blast_radius',
   'get_workflow',
   'online_workflow',
   'offline_workflow',
@@ -20,9 +27,14 @@ const ACTIONS = new Set([
   'list_instances',
   'get_instance',
   'retry_instance',
+  'list_datasources',
+  'get_datasource',
+  'extract_task_runtime_config',
   'append_task',
   'append_sql_task',
   'append_shell_task',
+  'update_task',
+  'update_sql_task',
   'disable_tasks_except',
   'disable_task',
   'delete_task',
@@ -41,12 +53,25 @@ const payload = {
   workflow_code: inputPayload.workflow_code || '',
   workflow_name: inputPayload.workflow_name || '',
   instance_id: inputPayload.instance_id || '',
+  schedule_id: inputPayload.schedule_id || '',
   start_node_list: inputPayload.start_node_list || '',
   schedule_time: inputPayload.schedule_time || '',
   state_type: inputPayload.state_type || '',
   search_val: inputPayload.search_val || '',
   page_no: inputPayload.page_no ?? 1,
   page_size: inputPayload.page_size ?? 20,
+  schedule_json: inputPayload.schedule_json && typeof inputPayload.schedule_json === 'object'
+    ? inputPayload.schedule_json
+    : (inputPayload.schedule_json || ''),
+  crontab: inputPayload.crontab || '',
+  start_time: inputPayload.start_time || '',
+  end_time: inputPayload.end_time || '',
+  timezone_id: inputPayload.timezone_id || '',
+  warning_type: inputPayload.warning_type || '',
+  warning_group_id: inputPayload.warning_group_id || '',
+  failure_strategy: inputPayload.failure_strategy || '',
+  process_instance_priority: inputPayload.process_instance_priority || '',
+  worker_group: inputPayload.worker_group || '',
   custom_params: inputPayload.custom_params && typeof inputPayload.custom_params === 'object'
     ? inputPayload.custom_params
     : {},
@@ -58,11 +83,31 @@ const payload = {
   script: inputPayload.script || '',
   sql_type: inputPayload.sql_type ?? '',
   datasource: inputPayload.datasource || '',
+  datasource_id: inputPayload.datasource_id || '',
   environment_code: inputPayload.environment_code ?? '',
   tenant_code: inputPayload.tenant_code || '',
   upstream_task_name: inputPayload.upstream_task_name || '',
   upstream_task_code: inputPayload.upstream_task_code || '',
   task_code: inputPayload.task_code || '',
+  local_params: Array.isArray(inputPayload.local_params)
+    ? inputPayload.local_params
+    : (inputPayload.local_params && typeof inputPayload.local_params === 'object' ? inputPayload.local_params : []),
+  task_local_params: Array.isArray(inputPayload.task_local_params)
+    ? inputPayload.task_local_params
+    : (inputPayload.task_local_params && typeof inputPayload.task_local_params === 'object' ? inputPayload.task_local_params : []),
+  replace_local_params: Boolean(inputPayload.replace_local_params),
+  pre_statements: Array.isArray(inputPayload.pre_statements) ? inputPayload.pre_statements : [],
+  post_statements: Array.isArray(inputPayload.post_statements) ? inputPayload.post_statements : [],
+  task_params_patch: inputPayload.task_params_patch && typeof inputPayload.task_params_patch === 'object'
+    ? inputPayload.task_params_patch
+    : {},
+  title: inputPayload.title || '',
+  receivers: inputPayload.receivers || '',
+  receivers_cc: inputPayload.receivers_cc || '',
+  show_type: inputPayload.show_type || '',
+  conn_params: inputPayload.conn_params && typeof inputPayload.conn_params === 'object'
+    ? inputPayload.conn_params
+    : {},
   keep_task_names: Array.isArray(inputPayload.keep_task_names) ? inputPayload.keep_task_names : [],
   keep_task_codes: Array.isArray(inputPayload.keep_task_codes) ? inputPayload.keep_task_codes : [],
   target_task_name_prefixes: Array.isArray(inputPayload.target_task_name_prefixes)
@@ -90,6 +135,30 @@ if (!ds_token) errors.push('ds_token is required');
 if (['online_workflow', 'offline_workflow', 'trigger_workflow', 'dump_workflow_graph'].includes(action) && !payload.workflow_code) {
   errors.push(`${action} requires workflow_code`);
 }
+if (['online_schedule', 'offline_schedule', 'schedule_blast_radius'].includes(action)) {
+  if (!payload.project_code) errors.push(`${action} requires project_code`);
+  if (!payload.workflow_code && !payload.schedule_id) {
+    errors.push(`${action} requires workflow_code or schedule_id`);
+  }
+}
+if (action === 'get_schedule') {
+  if (!payload.project_code) errors.push('get_schedule requires project_code');
+  if (!payload.workflow_code && !payload.workflow_name && !payload.schedule_id) {
+    errors.push('get_schedule requires schedule_id or workflow_code or workflow_name');
+  }
+}
+if (['create_schedule', 'update_schedule'].includes(action)) {
+  if (!payload.project_code) errors.push(`${action} requires project_code`);
+  if (action === 'create_schedule' && !payload.workflow_code) {
+    errors.push('create_schedule requires workflow_code');
+  }
+  if (action === 'update_schedule' && !payload.workflow_code && !payload.schedule_id) {
+    errors.push('update_schedule requires workflow_code or schedule_id');
+  }
+  if (!payload.schedule_json && !payload.crontab) {
+    errors.push(`${action} requires schedule_json or crontab`);
+  }
+}
 if (action === 'get_instance' && !payload.instance_id) {
   errors.push('get_instance requires instance_id');
 }
@@ -99,6 +168,16 @@ if (action === 'retry_instance') {
 }
 if (action === 'get_workflow' && !payload.workflow_code && !payload.workflow_name) {
   errors.push('get_workflow requires workflow_code or workflow_name');
+}
+if (action === 'extract_task_runtime_config') {
+  if (!payload.project_code) errors.push('extract_task_runtime_config requires project_code');
+  if (!payload.workflow_code) errors.push('extract_task_runtime_config requires workflow_code');
+  if (!payload.task_name && !payload.task_code) {
+    errors.push('extract_task_runtime_config requires task_name or task_code');
+  }
+}
+if (action === 'get_datasource' && !payload.datasource && !payload.datasource_id) {
+  errors.push('get_datasource requires datasource or datasource_id');
 }
 
 if (['append_task', 'append_sql_task', 'append_shell_task'].includes(action)) {
@@ -123,6 +202,17 @@ if (['append_task', 'append_sql_task', 'append_shell_task'].includes(action)) {
   }
   if (taskType === 'SHELL' && !payload.script) {
     errors.push(`${action} requires script for SHELL task`);
+  }
+}
+
+if (['update_task', 'update_sql_task'].includes(action)) {
+  if (!payload.project_code) errors.push(`${action} requires project_code`);
+  if (!payload.workflow_code) errors.push(`${action} requires workflow_code`);
+  if (!payload.task_name && !payload.task_code) {
+    errors.push(`${action} requires task_name or task_code`);
+  }
+  if (action === 'update_sql_task' && !payload.sql && !payload.task_params_patch.sql && !payload.task_params_patch.rawScript) {
+    errors.push('update_sql_task requires sql or task_params_patch with sql/rawScript');
   }
 }
 

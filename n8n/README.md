@@ -62,16 +62,31 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 
 - `list_projects`
 - `list_workflows`
+- `list_schedules`
+- `get_schedule`
+- `create_schedule`
+- `update_schedule`
+- `online_schedule`
+- `offline_schedule`
+- `schedule_blast_radius`
 - `get_workflow`
 - `online_workflow`
 - `offline_workflow`
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `retry_instance`
+- `list_datasources`
+- `get_datasource`
+- `extract_task_runtime_config`
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
+- `update_task`
+- `update_sql_task`
 - `disable_task`
+- `disable_tasks_except`
+- `delete_task`
 - `dump_workflow_graph`
 
 ## 解析节点职责
