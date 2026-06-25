@@ -1,11 +1,27 @@
 ---
 name: ds-scheduler
-description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, task instances, task logs, datasources, or append/update/disable/delete SQL and SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th.
+description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, task instances, task logs, datasources, or append/update/disable/delete SQL and SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th. The current skill has been live-tested for create_workflow, create/update/online/offline schedule, get_task_log, retry_instance, append/update SQL tasks, and append/update SHELL tasks.
 ---
 
 # DS Scheduler
 
 把 Codex 侧的调度请求，转换成标准化的 n8n webhook 调用，并通过各国跳板机上的 `ds-scheduler-gateway` 执行实际 DS API 操作，覆盖查询、调度控制、运行态排障，以及 SQL / SHELL 任务的追加、修改、下线和删除。
+
+当前这版 skill 已在 `mx` 项目上完成实测，重点确认过：
+- `create_workflow`
+- `append_shell_task`
+- `update_shell_task`
+- `append_sql_task`
+- `append_task` + `task_type=SQL`
+- `update_sql_task`
+- `get_task_log`
+- `retry_instance`
+- `create_schedule`
+- `update_schedule`
+- `online_schedule`
+- `offline_schedule`
+
+其中 schedule 上下线现在会在网关侧做短轮询确认，尽量保证动作返回时 `get_schedule` 已能读到新状态。
 
 ## 何时使用
 
@@ -197,7 +213,17 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - 也允许显式传：
     - `0 / query / select / read`
     - `1 / non_query / update / write / execute`
+- `update_sql_task` 推荐直接传顶层 `sql`，skill/gateway 会自动改写为 DS 接受的 `task_params_patch.sql`
 - SHELL 任务当前依赖工作流中已有一个 `SHELL` 模板任务可供克隆
+- `create_workflow` 默认会先创建一个 bootstrap shell 节点，确保后续 `append_shell_task` / `append_sql_task` / `append_task` 能继续工作
+
+## 已验证使用建议
+
+- 拉任务日志时，优先直接传 `task_instance_id`
+- 修改 SQL 任务时，优先使用 `update_sql_task`
+- 修改 SHELL 任务脚本时，优先使用 `update_shell_task`
+- 新增任务时，优先使用通用 `append_task` 并显式给 `task_type`
+- 调度上下线后，如用户要确认状态，直接再调一次 `get_schedule` 即可；当前网关已尽量等待状态收敛
 
 ## 高风险保护
 

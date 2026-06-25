@@ -2,6 +2,8 @@
 
 一个面向 Codex 的多国家 DolphinScheduler 3.4 调度 skill 与 n8n 中转模板，支持查询、调度控制、任务实例排障，以及 SQL / SHELL 任务的追加、修改、下线和删除。
 
+当前仓库这版能力已在 `mx` 环境空项目上完成全链路实测，覆盖 `create_workflow`、SQL/SHELL 任务新增与修改、实例与日志排障、调度创建更新及上下线。
+
 ## 目标
 
 这个仓库解决两件事：
@@ -43,6 +45,44 @@
 - `disable_task`
 - `disable_tasks_except`
 - `delete_task`
+
+## 已实测通过
+
+- `list_projects`
+- `list_workflows`
+- `create_workflow`
+- `get_workflow`
+- `dump_workflow_graph`
+- `online_workflow`
+- `offline_workflow`
+- `trigger_workflow`
+- `list_instances`
+- `get_instance`
+- `retry_instance`
+- `list_task_instances`
+- `get_task_log`
+- `append_shell_task`
+- `update_shell_task`
+- `append_sql_task`
+- `append_task` + `task_type=SQL`
+- `update_sql_task`
+- `extract_task_runtime_config`
+- `create_schedule`
+- `get_schedule`
+- `list_schedules`
+- `update_schedule`
+- `online_schedule`
+- `offline_schedule`
+- `schedule_blast_radius`
+- `list_datasources`
+- `get_datasource`
+
+补充说明：
+
+- `create_workflow` 现在会创建 bootstrap shell 节点，便于后续继续追加 SQL 或 SHELL 任务
+- `update_shell_task` 是正式显式动作，用于修改已有 SHELL 任务脚本内容
+- `update_sql_task` 推荐直接传顶层 `sql`，网关会改写成 DS 接受的更新结构
+- `online_schedule` / `offline_schedule` 已增加短轮询确认，返回时会尽量让 `get_schedule` 直接读到目标状态
 
 ## 明确禁止
 
