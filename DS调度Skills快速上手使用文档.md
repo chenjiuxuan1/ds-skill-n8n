@@ -43,6 +43,8 @@
 | `trigger_workflow` | 手动触发工作流 |
 | `list_instances` | 查工作流实例列表 |
 | `get_instance` | 查单个实例详情 |
+| `list_task_instances` | 查某次工作流实例下的任务实例明细 |
+| `get_task_log` | 拉取具体任务实例运行日志 |
 | `retry_instance` | 重跑失败实例 |
 | `dump_workflow_graph` | 导出 DAG 结构 |
 | `append_task` | 通用追加任务 |
@@ -62,6 +64,8 @@
 
 - 查询某个国家“数仓-工作流”项目里有哪些上线工作流
 - 查询最近一小时失败的工作流实例
+- 查询某次实例里到底哪个任务失败了
+- 拉取失败任务的运行日志
 - 对失败实例执行重跑
 - 在某个工作流里新增一个 SQL 或 SHELL 节点
 - 删除一个误加的任务节点

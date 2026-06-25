@@ -82,7 +82,48 @@ python3 scripts/build_ds_webhook_payload.py \
   --instance-id 1040772
 ```
 
-## 7. 修改已有 SQL 任务内容
+## 7. 查询某次实例里的任务明细
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action list_task_instances \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --instance-id 23511030 \
+  --page-no 1 \
+  --page-size 100
+```
+
+## 8. 拉取任务运行日志
+
+按任务实例 ID 直接拉取：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action get_task_log \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --task-instance-id 23458667
+```
+
+按“实例 + 任务名”自动定位后拉取：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action get_task_log \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --instance-id 23511030 \
+  --task-name "ods_repay_asset"
+```
+
+## 9. 修改已有 SQL 任务内容
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -97,7 +138,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --sql-type query
 ```
 
-## 8. 给任务添加自定义参数
+## 10. 给任务添加自定义参数
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -111,7 +152,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-local-params-json '[{"prop":"biz_date","direct":"IN","type":"VARCHAR","value":"${system.biz.date}"}]'
 ```
 
-## 9. 创建定时
+## 11. 创建定时
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -128,7 +169,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --worker-group default
 ```
 
-## 10. 上线 / 下线定时
+## 12. 上线 / 下线定时
 
 上线：
 
@@ -154,7 +195,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 158515019593728
 ```
 
-## 11. 精确下线单个任务
+## 13. 精确下线单个任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -167,7 +208,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-name "ods_msgsvr_ivr_account"
 ```
 
-## 12. 下线任务前的安全检查建议
+## 14. 下线任务前的安全检查建议
 
 对于同步类工作流，在执行以下动作前：
 

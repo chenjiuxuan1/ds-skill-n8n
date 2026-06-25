@@ -26,6 +26,8 @@ const ACTIONS = new Set([
   'trigger_workflow',
   'list_instances',
   'get_instance',
+  'list_task_instances',
+  'get_task_log',
   'retry_instance',
   'list_datasources',
   'get_datasource',
@@ -53,6 +55,8 @@ const payload = {
   workflow_code: inputPayload.workflow_code || '',
   workflow_name: inputPayload.workflow_name || '',
   instance_id: inputPayload.instance_id || '',
+  process_instance_id: inputPayload.process_instance_id || '',
+  task_instance_id: inputPayload.task_instance_id || '',
   schedule_id: inputPayload.schedule_id || '',
   start_node_list: inputPayload.start_node_list || '',
   schedule_time: inputPayload.schedule_time || '',
@@ -161,6 +165,22 @@ if (['create_schedule', 'update_schedule'].includes(action)) {
 }
 if (action === 'get_instance' && !payload.instance_id) {
   errors.push('get_instance requires instance_id');
+}
+if (action === 'list_task_instances') {
+  if (!payload.project_code) errors.push('list_task_instances requires project_code');
+  if (!payload.process_instance_id && !payload.instance_id) {
+    errors.push('list_task_instances requires process_instance_id or instance_id');
+  }
+}
+if (action === 'get_task_log') {
+  if (!payload.project_code) errors.push('get_task_log requires project_code');
+  if (!payload.task_instance_id) {
+    const hasInstance = Boolean(payload.process_instance_id || payload.instance_id);
+    const hasTaskLocator = Boolean(payload.task_name || payload.task_code);
+    if (!hasInstance || !hasTaskLocator) {
+      errors.push('get_task_log requires task_instance_id or (process_instance_id|instance_id) plus (task_name|task_code)');
+    }
+  }
 }
 if (action === 'retry_instance') {
   if (!payload.project_code) errors.push('retry_instance requires project_code');

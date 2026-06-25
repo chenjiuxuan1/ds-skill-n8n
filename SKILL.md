@@ -28,6 +28,8 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `trigger_workflow`
   - `list_instances`
   - `get_instance`
+  - `list_task_instances`
+  - `get_task_log`
   - `retry_instance`
   - `list_datasources`
   - `get_datasource`
@@ -87,6 +89,10 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `workflow_code`
 - `workflow_name`
 - `instance_id`
+- `process_instance_id`
+- `task_instance_id`
+- `task_name`
+- `task_code`
 - `page_no`
 - `page_size`
 - `search_val`

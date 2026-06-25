@@ -26,6 +26,8 @@
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `list_task_instances`
+- `get_task_log`
 - `retry_instance`
 - `list_datasources`
 - `get_datasource`
@@ -121,6 +123,23 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 
 - SSH 地址
 - `--country`
+
+## 新增：任务实例与任务日志
+
+现在 skill 额外支持两类运行态排障动作：
+
+- `list_task_instances`
+  - 按工作流实例查询该次运行下的任务实例明细
+- `get_task_log`
+  - 拉取某个任务实例的实际运行日志
+
+典型用法：
+
+1. 先用 `get_instance` 或 `list_instances` 找到 `instance_id`
+2. 再用 `list_task_instances` 查看这次实例里有哪些任务
+3. 最后用 `get_task_log` 按 `task_instance_id` 或 `task_name` 拉日志
+
+这样就能把“实例状态 -> 任务状态 -> 任务日志”整条链路串起来。
 
 ## 固定模板：批量精确下线任务
 

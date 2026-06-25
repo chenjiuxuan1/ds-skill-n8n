@@ -25,6 +25,10 @@
     "workflow_code": "",
     "workflow_name": "",
     "instance_id": "",
+    "process_instance_id": "",
+    "task_instance_id": "",
+    "task_name": "",
+    "task_code": "",
     "start_node_list": "",
     "schedule_time": "",
     "state_type": "",
@@ -53,6 +57,8 @@
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `list_task_instances`
+- `get_task_log`
 - `retry_instance`
 - `append_task`
 - `append_sql_task`
@@ -254,6 +260,44 @@
 
 可选：
 - `project_code`
+
+### `list_task_instances`
+
+必填：
+- `project_code`
+
+必填其一：
+- `process_instance_id`
+- `instance_id`
+
+可选：
+- `page_no`
+- `page_size`
+- `state_type`
+- `search_val`
+
+### `get_task_log`
+
+必填：
+- `project_code`
+
+推荐直接提供：
+- `task_instance_id`
+
+也支持通过以下组合自动定位：
+- `process_instance_id` 或 `instance_id`
+- `task_name` 或 `task_code`
+
+返回重点：
+- `task_instance_id`
+- `process_instance_id`
+- `task_name`
+- `task_code`
+- `state`
+- `host`
+- `log_path`
+- `log_endpoint_used`
+- `log`
 
 ### `retry_instance`
 

@@ -75,6 +75,8 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - `trigger_workflow`
 - `list_instances`
 - `get_instance`
+- `list_task_instances`
+- `get_task_log`
 - `retry_instance`
 - `list_datasources`
 - `get_datasource`
@@ -110,6 +112,21 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 ```
 
 如果 stdout 不是合法 JSON，则返回统一错误结构。
+
+## 任务实例与任务日志链路
+
+新增推荐排障链路如下：
+
+1. `list_instances`
+   - 先定位失败或目标运行实例
+2. `get_instance`
+   - 看实例基础状态
+3. `list_task_instances`
+   - 拉出该实例下所有任务实例
+4. `get_task_log`
+   - 根据 `task_instance_id` 或 `instance_id + task_name` 拉详细日志
+
+这样 Codex 通过同一条 n8n webhook，就能继续往下追到具体任务日志，不需要再手工进 DS 页面点日志。
 
 ## 推荐正式 webhook
 
