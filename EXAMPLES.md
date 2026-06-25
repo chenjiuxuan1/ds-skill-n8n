@@ -165,7 +165,27 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-local-params-json '[{"prop":"biz_date","direct":"IN","type":"VARCHAR","value":"${system.biz.date}"}]'
 ```
 
-## 12. 修改已有 SHELL 任务脚本
+## 12. 给任务填写资源列表
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action update_shell_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 19427088052704 \
+  --workflow-code 174599383687393 \
+  --task-name "load_dim_account_shell" \
+  --resource-list-json '[{"id":12345,"name":"ods/load_dim_account.sh","res":"FILE"}]'
+```
+
+如需保留原资源再追加新资源，可额外加：
+
+```bash
+--merge-resource-list
+```
+
+## 13. 修改已有 SHELL 任务脚本
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -179,7 +199,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --script "bash /data/apps/ds/load_dim_account.sh ${biz_date}"
 ```
 
-## 13. 创建定时
+## 14. 创建定时
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -196,7 +216,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --worker-group default
 ```
 
-## 14. 上线 / 下线定时
+## 15. 上线 / 下线定时
 
 上线：
 

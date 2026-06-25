@@ -235,8 +235,22 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "tenant_code": args.tenant_code or "",
                 "upstream_task_name": args.upstream_task_name or "",
                 "upstream_task_code": args.upstream_task_code or "",
+                "local_params": _load_json(args.local_params_json, []),
+                "task_local_params": _load_json(args.task_local_params_json, []),
+                "replace_local_params": args.replace_local_params,
+                "pre_statements": _load_json(args.pre_statements_json, []),
+                "post_statements": _load_json(args.post_statements_json, []),
+                "task_params_patch": _load_json(args.task_params_patch_json, {}),
+                "title": args.title or "",
+                "receivers": args.receivers or "",
+                "receivers_cc": args.receivers_cc or "",
+                "show_type": args.show_type or "",
+                "conn_params": _load_json(args.conn_params_json, {}),
             }
         )
+        if args.resource_list_json is not None:
+            extra_payload["resource_list"] = _load_json(args.resource_list_json, [])
+            extra_payload["replace_resource_list"] = not args.merge_resource_list
         if args.restore_original_state is not None:
             extra_payload["restore_original_state"] = args.restore_original_state
         if args.auto_offline is not None:
@@ -268,6 +282,9 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "conn_params": _load_json(args.conn_params_json, {}),
             }
         )
+        if args.resource_list_json is not None:
+            extra_payload["resource_list"] = _load_json(args.resource_list_json, [])
+            extra_payload["replace_resource_list"] = not args.merge_resource_list
         if args.restore_original_state is not None:
             extra_payload["restore_original_state"] = args.restore_original_state
         if args.auto_offline is not None:
@@ -363,6 +380,8 @@ def main() -> None:
     parser.add_argument("--local-params-json")
     parser.add_argument("--task-local-params-json")
     parser.add_argument("--replace-local-params", action="store_true")
+    parser.add_argument("--resource-list-json")
+    parser.add_argument("--merge-resource-list", action="store_true")
     parser.add_argument("--pre-statements-json")
     parser.add_argument("--post-statements-json")
     parser.add_argument("--task-params-patch-json")

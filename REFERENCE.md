@@ -464,6 +464,9 @@
 - `local_params`
 - `task_local_params`
 - `replace_local_params`
+- `resource_list`
+- `resources`
+- `replace_resource_list`
 - `pre_statements`
 - `post_statements`
 - `task_params_patch`
@@ -500,6 +503,9 @@ SQL 任务附加可选：
 - `local_params`
 - `task_local_params`
 - `replace_local_params`
+- `resource_list`
+- `resources`
+- `replace_resource_list`
 - `pre_statements`
 - `post_statements`
 - `task_params_patch`
@@ -532,11 +538,31 @@ SQL 任务附加可选：
 - `local_params`
 - `task_local_params`
 - `replace_local_params`
+- `resource_list`
+- `resources`
+- `replace_resource_list`
 - `task_params_patch`
 - `environment_code`
 - `tenant_code`
 - `restore_original_state`
 - `auto_offline`
+
+### 自定义参数与资源字段说明
+
+- `local_params` / `task_local_params`
+  - 写入 `taskParams.localParams`
+  - 既支持标准 DS 数组，也支持 `{ "biz_date": "${system.biz.date}" }` 这种对象简写
+- `resource_list` / `resources`
+  - 写入 `taskParams.resourceList`
+  - 支持数组，元素可以是资源对象、资源 id，或资源名字符串
+- `replace_local_params`
+  - `true` 时整体替换原自定义参数
+  - 默认 `false`，按 `prop` 合并
+- `replace_resource_list`
+  - 只在显式传了 `resource_list` / `resources` 时生效
+  - 默认 `true`，按传入值整体替换原资源列表
+  - 如需保留原资源并追加新资源，传 `false`
+  - 如果用命令行 builder 生成请求，可加 `--merge-resource-list`
 
 ### `disable_task`
 

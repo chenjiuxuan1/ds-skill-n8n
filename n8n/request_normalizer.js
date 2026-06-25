@@ -133,6 +133,23 @@ if (typeof inputPayload.restore_original_state === 'boolean') {
 if (typeof inputPayload.auto_offline === 'boolean') {
   payload.auto_offline = inputPayload.auto_offline;
 }
+if (Object.prototype.hasOwnProperty.call(inputPayload, 'resource_list')) {
+  payload.resource_list = Array.isArray(inputPayload.resource_list)
+    ? inputPayload.resource_list
+    : (inputPayload.resource_list && typeof inputPayload.resource_list === 'object'
+      ? [inputPayload.resource_list]
+      : (inputPayload.resource_list === '' || inputPayload.resource_list == null ? [] : [inputPayload.resource_list]));
+}
+if (Object.prototype.hasOwnProperty.call(inputPayload, 'resources')) {
+  payload.resource_list = Array.isArray(inputPayload.resources)
+    ? inputPayload.resources
+    : (inputPayload.resources && typeof inputPayload.resources === 'object'
+      ? [inputPayload.resources]
+      : (inputPayload.resources === '' || inputPayload.resources == null ? [] : [inputPayload.resources]));
+}
+if (Object.prototype.hasOwnProperty.call(inputPayload, 'replace_resource_list')) {
+  payload.replace_resource_list = Boolean(inputPayload.replace_resource_list);
+}
 
 const errors = [];
 

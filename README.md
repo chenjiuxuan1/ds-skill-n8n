@@ -82,6 +82,10 @@
 - `create_workflow` 现在会创建 bootstrap shell 节点，便于后续继续追加 SQL 或 SHELL 任务
 - `update_shell_task` 是正式显式动作，用于修改已有 SHELL 任务脚本内容
 - `update_sql_task` 推荐直接传顶层 `sql`，网关会改写成 DS 接受的更新结构
+- `local_params` / `task_local_params` 可用于填写 DS 任务“自定义参数”
+- `resource_list` / `resources` 可用于填写 DS 任务“资源”，底层映射到 `taskParams.resourceList`
+- 显式传 `resource_list` 时默认整体替换原资源列表；如需在保留原资源基础上追加，传 `replace_resource_list=false`
+- 如果用 `build_ds_webhook_payload.py` 生成请求，想保留原资源再追加新资源，可加 `--merge-resource-list`
 - `online_schedule` / `offline_schedule` 已增加短轮询确认，返回时会尽量让 `get_schedule` 直接读到目标状态
 
 ## 明确禁止

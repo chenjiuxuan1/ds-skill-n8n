@@ -133,6 +133,10 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `template_task_name`
 - `sql` 或 `script`
 - `sql_type`
+- `local_params` / `task_local_params`
+- `replace_local_params`
+- `resource_list` / `resources`
+- `replace_resource_list`
 - `upstream_task_name` / `upstream_task_code`
 - `restore_original_state`
 - `auto_offline`
@@ -145,6 +149,8 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `datasource`
 - `local_params` / `task_local_params`
 - `replace_local_params`
+- `resource_list` / `resources`
+- `replace_resource_list`
 - `pre_statements`
 - `post_statements`
 - `task_params_patch`
@@ -214,6 +220,9 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
     - `0 / query / select / read`
     - `1 / non_query / update / write / execute`
 - `update_sql_task` 推荐直接传顶层 `sql`，skill/gateway 会自动改写为 DS 接受的 `task_params_patch.sql`
+- `local_params` / `task_local_params` 会写入任务的 `taskParams.localParams`
+- `resource_list` / `resources` 会写入任务的 `taskParams.resourceList`
+- 只要显式传了 `resource_list`，默认会按传入值整体替换原资源列表；如需保留原资源再追加，传 `replace_resource_list=false`
 - SHELL 任务当前依赖工作流中已有一个 `SHELL` 模板任务可供克隆
 - `create_workflow` 默认会先创建一个 bootstrap shell 节点，确保后续 `append_shell_task` / `append_sql_task` / `append_task` 能继续工作
 
