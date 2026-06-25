@@ -13,6 +13,7 @@
 
 - `list_projects`
 - `list_workflows`
+- `create_workflow`
 - `list_schedules`
 - `get_schedule`
 - `create_schedule`
@@ -189,7 +190,6 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 这是一版可运行骨架。
 
 第二版可以继续补：
-- `create_workflow`
 - `update_workflow`
 - 资源文件上传
 - 审计与幂等控制

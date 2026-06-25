@@ -37,7 +37,20 @@ python3 scripts/build_ds_webhook_payload.py \
   --custom-params-json '{"dt":"2026-06-10"}'
 ```
 
-## 4. 追加 SQL 任务
+## 4. 在空项目里创建一个空 workflow
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action create_workflow \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 177096834343936 \
+  --workflow-name "codex_mx_empty_test_workflow" \
+  --description "Created by Codex for DS scheduler skill testing"
+```
+
+## 5. 追加 SQL 任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -54,7 +67,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --sql-type query
 ```
 
-## 5. 追加 SHELL 任务
+## 6. 追加 SHELL 任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -70,7 +83,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --script "echo hello"
 ```
 
-## 6. 查询实例详情
+## 7. 查询实例详情
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -82,7 +95,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --instance-id 1040772
 ```
 
-## 7. 查询某次实例里的任务明细
+## 8. 查询某次实例里的任务明细
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -96,7 +109,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --page-size 100
 ```
 
-## 8. 拉取任务运行日志
+## 9. 拉取任务运行日志
 
 按任务实例 ID 直接拉取：
 
@@ -123,7 +136,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-name "ods_repay_asset"
 ```
 
-## 9. 修改已有 SQL 任务内容
+## 10. 修改已有 SQL 任务内容
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -138,7 +151,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --sql-type query
 ```
 
-## 10. 给任务添加自定义参数
+## 11. 给任务添加自定义参数
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -152,7 +165,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-local-params-json '[{"prop":"biz_date","direct":"IN","type":"VARCHAR","value":"${system.biz.date}"}]'
 ```
 
-## 11. 修改已有 SHELL 任务脚本
+## 12. 修改已有 SHELL 任务脚本
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -166,7 +179,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --script "bash /data/apps/ds/load_dim_account.sh ${biz_date}"
 ```
 
-## 12. 创建定时
+## 13. 创建定时
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -183,7 +196,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --worker-group default
 ```
 
-## 13. 上线 / 下线定时
+## 14. 上线 / 下线定时
 
 上线：
 
@@ -209,7 +222,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 158515019593728
 ```
 
-## 14. 精确下线单个任务
+## 15. 精确下线单个任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -222,7 +235,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-name "ods_msgsvr_ivr_account"
 ```
 
-## 15. 下线任务前的安全检查建议
+## 16. 下线任务前的安全检查建议
 
 对于同步类工作流，在执行以下动作前：
 

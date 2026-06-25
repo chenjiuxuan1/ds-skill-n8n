@@ -44,6 +44,7 @@
 
 - `list_projects`
 - `list_workflows`
+- `create_workflow`
 - `list_schedules`
 - `get_schedule`
 - `create_schedule`
@@ -343,6 +344,38 @@
 - `task_name`
 - `task_code`
 
+### `create_workflow`
+
+用于在指定项目下创建一个空的 workflow definition。
+
+必填：
+- `project_code`
+- `workflow_name`
+
+可选：
+- `description`
+- `tenant_code`
+- `execution_type`
+- `global_params`
+- `timeout`
+
+默认行为：
+- 创建空 workflow，不自动创建任务
+- `taskDefinitionJson = []`
+- `taskRelationJson = []`
+- `locations = []`
+- `execution_type` 默认 `PARALLEL`
+- `global_params` 默认 `[]`
+- `timeout` 默认 `0`
+
+返回重点：
+- `workflow_name`
+- `workflow_code`
+- `project_code`
+- `execution_type`
+- `timeout`
+- `create_result`
+
 ### `append_task`
 
 推荐通用入口。
@@ -587,7 +620,6 @@ SQL 任务附加可选：
 
 ## 当前不覆盖
 
-- `create_workflow`
 - `update_workflow` 的完整 DAG 设计器能力
 - 资源中心文件上传
 - 非 SQL / SHELL 的自动追加模板（如 PYTHON / SPARK / HTTP）

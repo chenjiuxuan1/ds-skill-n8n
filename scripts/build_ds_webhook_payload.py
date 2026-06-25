@@ -14,6 +14,7 @@ COUNTRIES = {"cn", "ine", "mx", "ph", "pk", "th"}
 ACTIONS = {
     "list_projects",
     "list_workflows",
+    "create_workflow",
     "list_schedules",
     "get_schedule",
     "create_schedule",
@@ -85,6 +86,9 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
 
     if args.action in {"online_workflow", "offline_workflow", "trigger_workflow", "dump_workflow_graph", "schedule_blast_radius"}:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
+    if args.action == "create_workflow":
+        _require(bool(args.project_code), "create_workflow requires --project-code")
+        _require(bool(args.workflow_name), "create_workflow requires --workflow-name")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
     if args.action == "list_task_instances":
@@ -177,6 +181,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "project_code": args.project_code or "",
             "workflow_code": args.workflow_code or "",
             "workflow_name": args.workflow_name or "",
+            "description": args.description or "",
             "instance_id": args.instance_id or "",
             "process_instance_id": args.process_instance_id or "",
             "task_instance_id": args.task_instance_id or "",
@@ -187,6 +192,10 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "search_val": args.search_val or "",
             "page_no": args.page_no,
             "page_size": args.page_size,
+            "global_params": _load_json(args.global_params_json, []),
+            "execution_type": args.execution_type or "",
+            "timeout": args.timeout if args.timeout is not None else "",
+            "tenant_code": args.tenant_code or "",
             "custom_params": _load_json(args.custom_params_json, {}),
         },
     }
@@ -311,6 +320,7 @@ def main() -> None:
     parser.add_argument("--project-code")
     parser.add_argument("--workflow-code")
     parser.add_argument("--workflow-name")
+    parser.add_argument("--description")
     parser.add_argument("--instance-id")
     parser.add_argument("--process-instance-id")
     parser.add_argument("--task-instance-id")
@@ -334,6 +344,9 @@ def main() -> None:
     parser.add_argument("--environment-code")
     parser.add_argument("--tenant-code")
     parser.add_argument("--worker-group")
+    parser.add_argument("--global-params-json")
+    parser.add_argument("--execution-type")
+    parser.add_argument("--timeout", type=int)
     parser.add_argument("--warning-type")
     parser.add_argument("--warning-group-id")
     parser.add_argument("--failure-strategy")

@@ -62,6 +62,7 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 
 - `list_projects`
 - `list_workflows`
+- `create_workflow`
 - `list_schedules`
 - `get_schedule`
 - `create_schedule`

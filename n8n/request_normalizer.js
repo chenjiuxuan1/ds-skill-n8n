@@ -13,6 +13,7 @@ const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
   'list_projects',
   'list_workflows',
+  'create_workflow',
   'list_schedules',
   'get_schedule',
   'create_schedule',
@@ -55,6 +56,7 @@ const payload = {
   project_code: inputPayload.project_code || '',
   workflow_code: inputPayload.workflow_code || '',
   workflow_name: inputPayload.workflow_name || '',
+  description: inputPayload.description || '',
   instance_id: inputPayload.instance_id || '',
   process_instance_id: inputPayload.process_instance_id || '',
   task_instance_id: inputPayload.task_instance_id || '',
@@ -77,6 +79,11 @@ const payload = {
   failure_strategy: inputPayload.failure_strategy || '',
   process_instance_priority: inputPayload.process_instance_priority || '',
   worker_group: inputPayload.worker_group || '',
+  global_params: Array.isArray(inputPayload.global_params)
+    ? inputPayload.global_params
+    : (inputPayload.global_params && typeof inputPayload.global_params === 'object' ? inputPayload.global_params : []),
+  execution_type: inputPayload.execution_type || '',
+  timeout: inputPayload.timeout ?? '',
   custom_params: inputPayload.custom_params && typeof inputPayload.custom_params === 'object'
     ? inputPayload.custom_params
     : {},
@@ -139,6 +146,10 @@ if (!ds_token) errors.push('ds_token is required');
 
 if (['online_workflow', 'offline_workflow', 'trigger_workflow', 'dump_workflow_graph'].includes(action) && !payload.workflow_code) {
   errors.push(`${action} requires workflow_code`);
+}
+if (action === 'create_workflow') {
+  if (!payload.project_code) errors.push('create_workflow requires project_code');
+  if (!payload.workflow_name) errors.push('create_workflow requires workflow_name');
 }
 if (['online_schedule', 'offline_schedule', 'schedule_blast_radius'].includes(action)) {
   if (!payload.project_code) errors.push(`${action} requires project_code`);

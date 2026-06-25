@@ -37,6 +37,7 @@
 |---|---|
 | `list_projects` | 查项目 |
 | `list_workflows` | 查工作流列表 |
+| `create_workflow` | 在项目下创建空 workflow |
 | `get_workflow` | 查某个工作流详情 |
 | `online_workflow` | 工作流上线 |
 | `offline_workflow` | 工作流下线 |
@@ -70,6 +71,7 @@
 - 查询某次实例里到底哪个任务失败了
 - 拉取失败任务的运行日志
 - 对失败实例执行重跑
+- 在空项目里先创建一个空 workflow
 - 在某个工作流里新增一个 SQL 或 SHELL 节点
 - 修改已有 SHELL 任务脚本内容
 - 删除一个误加的任务节点

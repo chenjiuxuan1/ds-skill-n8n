@@ -15,6 +15,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - 用户要做：
   - `list_projects`
   - `list_workflows`
+  - `create_workflow`
   - `list_schedules`
   - `get_schedule`
   - `create_schedule`
@@ -157,6 +158,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 
 - `list_projects`
 - `list_workflows`
+- `create_workflow`
 - `get_workflow`
 - `list_instances`
 - `get_instance`
