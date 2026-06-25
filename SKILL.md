@@ -1,11 +1,11 @@
 ---
 name: ds-scheduler
-description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, tasks, datasources, or instances through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th.
+description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, task instances, task logs, datasources, or append/update/disable/delete SQL and SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th.
 ---
 
 # DS Scheduler
 
-把 Codex 侧的调度请求，转换成标准化的 n8n webhook 调用，并通过各国跳板机上的 `ds-scheduler-gateway` 执行实际 DS API 操作。
+把 Codex 侧的调度请求，转换成标准化的 n8n webhook 调用，并通过各国跳板机上的 `ds-scheduler-gateway` 执行实际 DS API 操作，覆盖查询、调度控制、运行态排障，以及 SQL / SHELL 任务的追加、修改、下线和删除。
 
 ## 何时使用
 

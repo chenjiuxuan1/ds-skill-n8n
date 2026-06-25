@@ -1,6 +1,6 @@
 # ds-skill-n8n
 
-一个面向 Codex 的多国家 DolphinScheduler 3.4 调度 skill 与 n8n 中转模板。
+一个面向 Codex 的多国家 DolphinScheduler 3.4 调度 skill 与 n8n 中转模板，支持查询、调度控制、任务实例排障，以及 SQL / SHELL 任务的追加、修改、下线和删除。
 
 ## 目标
 
