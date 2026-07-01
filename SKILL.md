@@ -214,12 +214,14 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `disable_tasks_except` 用于按任务名前缀圈定范围，然后保留白名单，其余统一禁用
 - 推荐优先使用 `append_task`，并显式传 `task_type`
 - SQL 任务：
-  - `select / with / show / desc / explain` 默认推断为 `sql_type = 0`
-  - 其他执行型 SQL 默认推断为 `sql_type = 1`
+  - `select / with / show / desc / explain` 默认推断为 `sql_type = query`
+  - 其他执行型 SQL 默认推断为 `sql_type = non_query`
   - 也允许显式传：
-    - `0 / query / select / read`
-    - `1 / non_query / update / write / execute`
+    - `query / select / read / 查询`
+    - `non_query / non-query / update / write / execute / 非查询`
+  - 网关写回 DS 时会自动转换成 DS 内部兼容值，优先保证 DS 前端页面仍可继续人工编辑
 - `update_sql_task` 推荐直接传顶层 `sql`，skill/gateway 会自动改写为 DS 接受的 `task_params_patch.sql`
+- SQL 任务如果传 `datasource` 名称，网关会先解析成 DS 的 datasource id 再写回任务定义
 - `local_params` / `task_local_params` 会写入任务的 `taskParams.localParams`
 - `resource_list` / `resources` 会写入任务的 `taskParams.resourceList`
 - 只要显式传了 `resource_list`，默认会按传入值整体替换原资源列表；如需保留原资源再追加，传 `replace_resource_list=false`

@@ -591,20 +591,27 @@ SQL 任务附加可选：
 
 | 输入 | 含义 |
 |---|---|
-| `0` | 查询型 SQL |
 | `query` | 查询型 SQL |
 | `select` | 查询型 SQL |
 | `read` | 查询型 SQL |
-| `1` | 执行型 SQL |
+| `查询` | 查询型 SQL |
 | `non_query` | 执行型 SQL |
 | `non-query` | 执行型 SQL |
+| `非查询` | 执行型 SQL |
 | `update` | 执行型 SQL |
 | `write` | 执行型 SQL |
 | `execute` | 执行型 SQL |
+| `0` | 查询型 SQL，兼容旧写法 |
+| `1` | 执行型 SQL，兼容旧写法 |
 
 如果不显式传：
-- 以 `select / with / show / desc / explain` 开头，默认 `0`
-- 其他默认 `1`
+- 以 `select / with / show / desc / explain` 开头，默认按 `query` 处理
+- 其他默认按 `non_query` 处理
+
+说明：
+- 面向 skill / webhook 的推荐写法是 `query` 或 `non_query`
+- gateway 写回 DS taskParams 时会自动转换成 DS 兼容值
+- SQL 任务如果传 `datasource` 名称，gateway 会优先解析成 datasource id 再写回，避免 DS 前端编辑页回填异常
 
 ## 返回格式
 

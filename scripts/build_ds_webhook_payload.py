@@ -229,7 +229,6 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "template_task_name": args.template_task_name or "",
                 "sql": args.sql or "",
                 "script": args.script or "",
-                "sql_type": args.sql_type if args.sql_type is not None else "",
                 "datasource": args.datasource or "",
                 "environment_code": args.environment_code or "",
                 "tenant_code": args.tenant_code or "",
@@ -248,6 +247,8 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "conn_params": _load_json(args.conn_params_json, {}),
             }
         )
+        if args.sql_type not in (None, ""):
+            extra_payload["sql_type"] = args.sql_type
         if args.resource_list_json is not None:
             extra_payload["resource_list"] = _load_json(args.resource_list_json, [])
             extra_payload["replace_resource_list"] = not args.merge_resource_list
@@ -264,7 +265,6 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "task_description": args.task_description or "",
                 "sql": args.sql or "",
                 "script": args.script or "",
-                "sql_type": args.sql_type if args.sql_type is not None else "",
                 "datasource": args.datasource or "",
                 "datasource_id": args.datasource_id or "",
                 "environment_code": args.environment_code or "",
@@ -282,6 +282,8 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "conn_params": _load_json(args.conn_params_json, {}),
             }
         )
+        if args.sql_type not in (None, ""):
+            extra_payload["sql_type"] = args.sql_type
         if args.resource_list_json is not None:
             extra_payload["resource_list"] = _load_json(args.resource_list_json, [])
             extra_payload["replace_resource_list"] = not args.merge_resource_list

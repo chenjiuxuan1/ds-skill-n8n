@@ -93,7 +93,6 @@ const payload = {
   template_task_name: inputPayload.template_task_name || '',
   sql: inputPayload.sql || '',
   script: inputPayload.script || '',
-  sql_type: inputPayload.sql_type ?? '',
   datasource: inputPayload.datasource || '',
   datasource_id: inputPayload.datasource_id || '',
   environment_code: inputPayload.environment_code ?? '',
@@ -132,6 +131,11 @@ if (typeof inputPayload.restore_original_state === 'boolean') {
 }
 if (typeof inputPayload.auto_offline === 'boolean') {
   payload.auto_offline = inputPayload.auto_offline;
+}
+if (Object.prototype.hasOwnProperty.call(inputPayload, 'sql_type')
+  && inputPayload.sql_type !== ''
+  && inputPayload.sql_type != null) {
+  payload.sql_type = inputPayload.sql_type;
 }
 if (Object.prototype.hasOwnProperty.call(inputPayload, 'resource_list')) {
   payload.resource_list = Array.isArray(inputPayload.resource_list)
