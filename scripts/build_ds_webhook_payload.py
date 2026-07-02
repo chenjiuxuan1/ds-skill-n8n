@@ -89,6 +89,11 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
     if args.action == "create_workflow":
         _require(bool(args.project_code), "create_workflow requires --project-code")
         _require(bool(args.workflow_name), "create_workflow requires --workflow-name")
+        if task_type == "SQL":
+            _require(bool(args.sql), "create_workflow with SQL initial task requires --sql")
+            _require(bool(args.datasource or args.datasource_id), "create_workflow with SQL initial task requires --datasource or --datasource-id")
+        if task_type == "SHELL":
+            _require(bool(args.script), "create_workflow with SHELL initial task requires --script")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
     if args.action == "list_task_instances":
@@ -201,6 +206,36 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
     }
 
     extra_payload = payload["payload"]
+    if args.action == "create_workflow":
+        extra_payload.update(
+            {
+                "task_type": task_type,
+                "task_name": args.task_name or "",
+                "task_description": args.task_description or "",
+                "sql": args.sql or "",
+                "script": args.script or "",
+                "datasource": args.datasource or "",
+                "datasource_id": args.datasource_id or "",
+                "environment_code": args.environment_code or "",
+                "tenant_code": args.tenant_code or "",
+                "local_params": _load_json(args.local_params_json, []),
+                "task_local_params": _load_json(args.task_local_params_json, []),
+                "replace_local_params": args.replace_local_params,
+                "pre_statements": _load_json(args.pre_statements_json, []),
+                "post_statements": _load_json(args.post_statements_json, []),
+                "title": args.title or "",
+                "receivers": args.receivers or "",
+                "receivers_cc": args.receivers_cc or "",
+                "show_type": args.show_type or "",
+                "conn_params": _load_json(args.conn_params_json, {}),
+            }
+        )
+        if args.sql_type not in (None, ""):
+            extra_payload["sql_type"] = args.sql_type
+        if args.resource_list_json is not None:
+            extra_payload["resource_list"] = _load_json(args.resource_list_json, [])
+            extra_payload["replace_resource_list"] = not args.merge_resource_list
+
     if args.action in {"create_schedule", "update_schedule", "online_schedule", "offline_schedule", "get_schedule", "schedule_blast_radius"}:
         extra_payload.update(
             {
