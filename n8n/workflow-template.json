@@ -270,7 +270,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "ssh -p 36000 root@10.20.47.14 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove internal >/dev/null 2>&1 || true; git remote add internal git@git.kuainiujinke.com:jiangchuanchen/ds-scheduler-gateway.git; GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' git fetch --prune internal main && git checkout -B main internal/main && git reset --hard internal/main && git clean -fd\""
+        "command": "ssh -p 36000 root@10.20.47.14 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove internal >/dev/null 2>&1 || true; git remote add internal git@git.kuainiujinke.com:jiangchuanchen/ds-scheduler-gateway.git; GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' git fetch --prune internal main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=internal/main main >/dev/null 2>&1 || true; git clean -fd\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
@@ -403,7 +403,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "ssh root@10.20.10.12 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main && git checkout -B main gateway-github/main && git reset --hard gateway-github/main && git clean -fd\""
+        "command": "ssh root@10.20.10.12 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=gateway-github/main main >/dev/null 2>&1 || true; git clean -fd\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
@@ -423,7 +423,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "=ssh -p 36000 root@192.168.21.236 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main && git checkout -B main gateway-github/main && git reset --hard gateway-github/main && git clean -fd\""
+        "command": "=ssh -p 36000 root@192.168.21.236 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=gateway-github/main main >/dev/null 2>&1 || true; git clean -fd\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
@@ -443,7 +443,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "=ssh -p 36000 root@172.20.220.165 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main && git checkout -B main gateway-github/main && git reset --hard gateway-github/main && git clean -fd\""
+        "command": "=ssh -p 36000 root@172.20.220.165 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=gateway-github/main main >/dev/null 2>&1 || true; git clean -fd\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
@@ -463,7 +463,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "=ssh -p 36000 root@192.168.20.236 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main && git checkout -B main gateway-github/main && git reset --hard gateway-github/main && git clean -fd\""
+        "command": "=ssh -p 36000 root@192.168.20.236 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=gateway-github/main main >/dev/null 2>&1 || true; git clean -fd\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
@@ -483,7 +483,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "=ssh root@10.20.84.176 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main && git checkout -B main gateway-github/main && git reset --hard gateway-github/main && git clean -fd\""
+        "command": "=ssh root@10.20.84.176 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=gateway-github/main main >/dev/null 2>&1 || true; git clean -fd\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
