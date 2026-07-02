@@ -217,6 +217,14 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - SSH 地址
 - `--country`
 
+补充：
+
+- `/root/ds-scheduler-gateway` 的代码更新节点不要再用 `git pull origin main`
+- 这套仓库里 `origin` 可能仍是旧 `scaffold`
+- 统一改用：
+  - `git pull gateway-github main`
+  - 或 `git pull internal main`
+
 ## 7. 常见操作示例
 
 ### 7.1 查询某国家项目

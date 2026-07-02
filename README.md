@@ -170,6 +170,33 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - SSH 地址
 - `--country`
 
+### 2.1 跳板机代码更新命令
+
+`ds-scheduler-gateway` 这套仓库不能再用 `git pull origin main` 更新。
+
+原因：
+
+- 这套 gateway 仓库里的 `origin` 仍可能指向旧的 `scaffold`
+- 正式 gateway 代码应从 `gateway-github` 或 `internal` 拉取
+
+推荐在各国家“代码拉取”节点统一使用：
+
+```bash
+ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && git pull gateway-github main"
+```
+
+如果走内网仓，则改成：
+
+```bash
+ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && git pull internal main"
+```
+
+不要再使用：
+
+```bash
+git pull origin main
+```
+
 ## 新增：任务实例与任务日志
 
 现在 skill 额外支持两类运行态排障动作：

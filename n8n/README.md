@@ -49,6 +49,26 @@ ssh -p 36000 root@10.20.47.14 "cd /root/ds-scheduler-gateway && python3 scripts/
 - 其他参数直接透传上游解析节点结果
 - 远端仓库路径固定为 `/root/ds-scheduler-gateway`
 
+代码更新节点请不要写成：
+
+```bash
+git pull origin main
+```
+
+因为这个仓库里的 `origin` 可能仍指向旧的 `scaffold`。
+
+统一推荐改成：
+
+```bash
+git pull gateway-github main
+```
+
+如需走内网仓，则使用：
+
+```bash
+git pull internal main
+```
+
 ## 远端网关职责
 
 远端 `ds-scheduler-gateway` 负责：
