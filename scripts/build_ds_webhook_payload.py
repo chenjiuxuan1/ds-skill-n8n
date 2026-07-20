@@ -44,6 +44,9 @@ ACTIONS = {
     "list_datasources",
     "get_datasource",
     "extract_task_runtime_config",
+    "list_resources",
+    "view_resource_file",
+    "search_resource_sql",
 }
 
 
@@ -136,6 +139,18 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.task_name or args.task_code), "extract_task_runtime_config requires --task-name or --task-code")
     if args.action == "get_datasource":
         _require(bool(args.datasource or args.datasource_id), "get_datasource requires --datasource or --datasource-id")
+    if args.action == "list_resources":
+        pass
+    if args.action == "view_resource_file":
+        _require(
+            bool(args.full_name or args.resource_full_name or args.file_name or args.resource_name),
+            "view_resource_file requires --full-name/--resource-full-name or --file-name/--resource-name",
+        )
+    if args.action == "search_resource_sql":
+        _require(
+            bool(args.sql_query or args.sql),
+            "search_resource_sql requires --sql-query or --sql",
+        )
     if args.action in {"disable_task", "delete_task"}:
         _require(bool(args.project_code), f"{args.action} requires --project-code")
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
@@ -202,6 +217,16 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "timeout": args.timeout if args.timeout is not None else "",
             "tenant_code": args.tenant_code or "",
             "custom_params": _load_json(args.custom_params_json, {}),
+            "resource_type": args.resource_type or "FILE",
+            "full_name": args.full_name or args.resource_full_name or "",
+            "current_dir": args.current_dir or args.resource_dir or "",
+            "file_name": args.file_name or args.resource_name or "",
+            "skip_line_num": args.skip_line_num,
+            "limit": args.limit,
+            "sql_query": args.sql_query or "",
+            "max_results": args.max_results,
+            "max_files": args.max_files,
+            "content_limit": args.content_limit,
         },
     }
 
@@ -427,6 +452,19 @@ def main() -> None:
     parser.add_argument("--receivers-cc")
     parser.add_argument("--show-type")
     parser.add_argument("--conn-params-json")
+    parser.add_argument("--resource-type")
+    parser.add_argument("--full-name")
+    parser.add_argument("--resource-full-name")
+    parser.add_argument("--current-dir")
+    parser.add_argument("--resource-dir")
+    parser.add_argument("--file-name")
+    parser.add_argument("--resource-name")
+    parser.add_argument("--skip-line-num", type=int, default=0)
+    parser.add_argument("--limit", type=int, default=200)
+    parser.add_argument("--sql-query")
+    parser.add_argument("--max-results", type=int, default=20)
+    parser.add_argument("--max-files", type=int, default=200)
+    parser.add_argument("--content-limit", type=int, default=500000)
     parser.add_argument("--keep-task-names-json")
     parser.add_argument("--keep-task-codes-json")
     parser.add_argument("--target-task-name-prefixes-json")

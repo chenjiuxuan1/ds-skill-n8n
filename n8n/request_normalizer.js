@@ -33,6 +33,9 @@ const ACTIONS = new Set([
   'list_datasources',
   'get_datasource',
   'extract_task_runtime_config',
+  'list_resources',
+  'view_resource_file',
+  'search_resource_sql',
   'append_task',
   'append_sql_task',
   'append_shell_task',
@@ -119,6 +122,16 @@ const payload = {
   conn_params: inputPayload.conn_params && typeof inputPayload.conn_params === 'object'
     ? inputPayload.conn_params
     : {},
+  resource_type: inputPayload.resource_type || inputPayload.type || 'FILE',
+  full_name: inputPayload.full_name || inputPayload.resource_full_name || '',
+  current_dir: inputPayload.current_dir || inputPayload.resource_dir || '',
+  file_name: inputPayload.file_name || inputPayload.resource_name || '',
+  skip_line_num: inputPayload.skip_line_num ?? 0,
+  limit: inputPayload.limit ?? 200,
+  sql_query: inputPayload.sql_query || inputPayload.resource_sql || '',
+  max_results: inputPayload.max_results ?? 20,
+  max_files: inputPayload.max_files ?? 200,
+  content_limit: inputPayload.content_limit ?? 500000,
   keep_task_names: Array.isArray(inputPayload.keep_task_names) ? inputPayload.keep_task_names : [],
   keep_task_codes: Array.isArray(inputPayload.keep_task_codes) ? inputPayload.keep_task_codes : [],
   target_task_name_prefixes: Array.isArray(inputPayload.target_task_name_prefixes)
@@ -231,6 +244,21 @@ if (action === 'extract_task_runtime_config') {
 }
 if (action === 'get_datasource' && !payload.datasource && !payload.datasource_id) {
   errors.push('get_datasource requires datasource or datasource_id');
+}
+if (action === 'list_resources') {
+  payload.resource_type = String(payload.resource_type || 'FILE').trim().toUpperCase();
+}
+if (action === 'view_resource_file') {
+  payload.resource_type = String(payload.resource_type || 'FILE').trim().toUpperCase();
+  if (!payload.full_name && !payload.file_name) {
+    errors.push('view_resource_file requires full_name/resource_full_name or file_name');
+  }
+}
+if (action === 'search_resource_sql') {
+  payload.resource_type = String(payload.resource_type || 'FILE').trim().toUpperCase();
+  if (!payload.sql_query && !payload.sql) {
+    errors.push('search_resource_sql requires sql_query or sql');
+  }
 }
 
 if (['append_task', 'append_sql_task', 'append_shell_task'].includes(action)) {

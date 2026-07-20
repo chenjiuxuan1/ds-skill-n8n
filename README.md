@@ -35,6 +35,9 @@
 - `list_datasources`
 - `get_datasource`
 - `extract_task_runtime_config`
+- `list_resources`
+- `view_resource_file`
+- `search_resource_sql`
 - `dump_workflow_graph`
 - `append_task`
 - `append_sql_task`
@@ -76,6 +79,9 @@
 - `schedule_blast_radius`
 - `list_datasources`
 - `get_datasource`
+- `list_resources`
+- `view_resource_file`
+- `search_resource_sql`
 
 补充说明：
 
@@ -86,6 +92,9 @@
 - `resource_list` / `resources` 可用于填写 DS 任务“资源”，底层映射到 `taskParams.resourceList`
 - 显式传 `resource_list` 时默认整体替换原资源列表；如需在保留原资源基础上追加，传 `replace_resource_list=false`
 - 如果用 `build_ds_webhook_payload.py` 生成请求，想保留原资源再追加新资源，可加 `--merge-resource-list`
+- `list_resources` 用于查看资源中心目录下的文件/文件夹列表，默认从资源根目录开始
+- `view_resource_file` 用于读取资源中心文件内容，支持直接传 `full_name`，也支持在指定目录下按 `file_name` 解析
+- `search_resource_sql` 会遍历资源中心文本文件，按 SQL 片段搜索命中文件，便于从资源文件里反查对应脚本
 - `online_schedule` / `offline_schedule` 已增加短轮询确认，返回时会尽量让 `get_schedule` 直接读到目标状态
 
 ## 明确禁止

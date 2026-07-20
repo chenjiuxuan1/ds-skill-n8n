@@ -74,6 +74,9 @@
 - `list_datasources`
 - `get_datasource`
 - `extract_task_runtime_config`
+- `list_resources`
+- `view_resource_file`
+- `search_resource_sql`
 
 ## 修改类动作的前置校验
 
@@ -343,6 +346,69 @@
 必填其一：
 - `task_name`
 - `task_code`
+
+### `list_resources`
+
+用于查看资源中心某个目录下的文件 / 文件夹列表。
+
+可选：
+- `resource_type`
+  - 默认 `FILE`
+  - 也支持 `UDF`
+- `full_name`
+- `resource_full_name`
+- `current_dir`
+- `resource_dir`
+- `search_val`
+- `page_no`
+- `page_size`
+
+默认行为：
+- 如果没有传目录，网关会先调用 DS 的 `resources/base-dir`，然后从资源根目录开始列
+
+### `view_resource_file`
+
+用于读取资源中心单个文件内容。
+
+必填其一：
+- `full_name`
+- `resource_full_name`
+- `file_name`
+- `resource_name`
+
+可选：
+- `resource_type`
+  - 默认 `FILE`
+- `current_dir`
+- `resource_dir`
+- `skip_line_num`
+- `limit`
+
+说明：
+- 如果只传 `file_name` / `resource_name`，网关会先在当前目录里按名称解析出 `full_name`
+
+### `search_resource_sql`
+
+用于在资源中心文本文件里按 SQL 片段反查命中文件。
+
+必填其一：
+- `sql_query`
+- `sql`
+
+可选：
+- `resource_type`
+  - 默认 `FILE`
+- `current_dir`
+- `resource_dir`
+- `file_name`
+- `search_val`
+- `max_results`
+- `max_files`
+- `content_limit`
+
+说明：
+- 这个动作会遍历资源树中的文本文件，并读取内容做标准化匹配
+- 适合“我知道一段 SQL，想反查它在哪个资源文件里”
 
 ### `create_workflow`
 

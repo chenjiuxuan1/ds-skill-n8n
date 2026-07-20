@@ -242,6 +242,48 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 158515019593728
 ```
 
+## 16. 查看资源中心目录
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country cn \
+  --action list_resources \
+  --ds-token "YOUR_DS_TOKEN" \
+  --resource-type FILE \
+  --current-dir "file:///tmp/dolphinscheduler/storage/default/resources" \
+  --search-val "phi" \
+  --page-no 1 \
+  --page-size 50
+```
+
+## 17. 查看资源文件内容
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country cn \
+  --action view_resource_file \
+  --ds-token "YOUR_DS_TOKEN" \
+  --full-name "file:///tmp/dolphinscheduler/storage/default/resources/phi/score_swap.sql" \
+  --skip-line-num 0 \
+  --limit 200
+```
+
+## 18. 按 SQL 片段反查资源文件
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country cn \
+  --action search_resource_sql \
+  --ds-token "YOUR_DS_TOKEN" \
+  --current-dir "file:///tmp/dolphinscheduler/storage/default/resources" \
+  --sql-query "WITH pkg_raw AS (SELECT CAST(ask_loan_package_loan_uuid AS VARCHAR) ask_loan_uuid" \
+  --max-results 10 \
+  --max-files 300
+```
+
 ## 15. 精确下线单个任务
 
 ```bash

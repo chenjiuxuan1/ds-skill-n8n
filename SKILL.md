@@ -1,6 +1,6 @@
 ---
 name: ds-scheduler
-description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, task instances, task logs, datasources, or append/update/disable/delete SQL and SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th. The current skill has been live-tested for create_workflow, create/update/online/offline schedule, get_task_log, retry_instance, append/update SQL tasks, and append/update SHELL tasks.
+description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, task instances, task logs, datasources, resource-center files, or append/update/disable/delete SQL and SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th. The current skill has been live-tested for create_workflow, create/update/online/offline schedule, get_task_log, retry_instance, append/update SQL tasks, and append/update SHELL tasks.
 ---
 
 # DS Scheduler
@@ -51,6 +51,9 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `list_datasources`
   - `get_datasource`
   - `extract_task_runtime_config`
+  - `list_resources`
+  - `view_resource_file`
+  - `search_resource_sql`
   - `dump_workflow_graph`
   - `append_task`
   - `append_sql_task`
@@ -116,6 +119,13 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `search_val`
 - `state_type`
 - `custom_params`
+- `resource_type`
+- `full_name`
+- `current_dir`
+- `file_name`
+- `skip_line_num`
+- `limit`
+- `sql_query`
 - `schedule_id`
 - `crontab`
 - `schedule_json`
@@ -225,6 +235,9 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `local_params` / `task_local_params` 会写入任务的 `taskParams.localParams`
 - `resource_list` / `resources` 会写入任务的 `taskParams.resourceList`
 - 只要显式传了 `resource_list`，默认会按传入值整体替换原资源列表；如需保留原资源再追加，传 `replace_resource_list=false`
+- `list_resources` 用于查看资源中心目录
+- `view_resource_file` 用于读取资源中心文件内容
+- `search_resource_sql` 用于按 SQL 片段在资源中心文本文件里反查命中文件
 - SHELL 任务当前依赖工作流中已有一个 `SHELL` 模板任务可供克隆
 - `create_workflow` 默认会先创建一个 bootstrap shell 节点，确保后续 `append_shell_task` / `append_sql_task` / `append_task` 能继续工作
 
