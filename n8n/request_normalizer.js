@@ -11,6 +11,7 @@ const FORBIDDEN_ACTION_ALIASES = new Set([
 
 const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
+  'resolve_project',
   'list_projects',
   'list_workflows',
   'create_workflow',
@@ -30,12 +31,17 @@ const ACTIONS = new Set([
   'list_task_instances',
   'get_task_log',
   'retry_instance',
+  'stop_instance',
+  'force_fail_instance',
+  'check_failed_instances',
   'list_datasources',
   'get_datasource',
   'extract_task_runtime_config',
   'list_resources',
   'view_resource_file',
   'search_resource_sql',
+  'find_resource_usage',
+  'search_country_git_sql',
   'append_task',
   'append_sql_task',
   'append_shell_task',
@@ -57,6 +63,7 @@ const inputPayload = raw.payload && typeof raw.payload === 'object' ? raw.payloa
 
 const payload = {
   project_code: inputPayload.project_code || '',
+  project_name: inputPayload.project_name || '',
   workflow_code: inputPayload.workflow_code || '',
   workflow_name: inputPayload.workflow_name || '',
   description: inputPayload.description || '',
@@ -228,9 +235,12 @@ if (action === 'get_task_log') {
     }
   }
 }
-if (action === 'retry_instance') {
-  if (!payload.project_code) errors.push('retry_instance requires project_code');
-  if (!payload.instance_id) errors.push('retry_instance requires instance_id');
+if (['retry_instance', 'stop_instance', 'force_fail_instance'].includes(action)) {
+  if (!payload.project_code) errors.push(`${action} requires project_code`);
+  if (!payload.instance_id) errors.push(`${action} requires instance_id`);
+}
+if (action === 'resolve_project' && !payload.project_code && !payload.project_name) {
+  errors.push('resolve_project requires project_code or project_name');
 }
 if (action === 'get_workflow' && !payload.workflow_code && !payload.workflow_name) {
   errors.push('get_workflow requires workflow_code or workflow_name');
@@ -258,6 +268,16 @@ if (action === 'search_resource_sql') {
   payload.resource_type = String(payload.resource_type || 'FILE').trim().toUpperCase();
   if (!payload.sql_query && !payload.sql) {
     errors.push('search_resource_sql requires sql_query or sql');
+  }
+}
+if (action === 'find_resource_usage') {
+  if (!payload.full_name && !payload.file_name) {
+    errors.push('find_resource_usage requires full_name or file_name');
+  }
+}
+if (action === 'search_country_git_sql') {
+  if (!payload.sql_query && !payload.sql) {
+    errors.push('search_country_git_sql requires sql_query or sql');
   }
 }
 

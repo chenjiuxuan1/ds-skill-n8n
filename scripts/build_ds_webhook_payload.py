@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 COUNTRIES = {"cn", "ine", "mx", "ph", "pk", "th"}
 ACTIONS = {
+    "resolve_project",
     "list_projects",
     "list_workflows",
     "create_workflow",
@@ -31,6 +32,9 @@ ACTIONS = {
     "list_task_instances",
     "get_task_log",
     "retry_instance",
+    "stop_instance",
+    "force_fail_instance",
+    "check_failed_instances",
     "append_task",
     "append_sql_task",
     "append_shell_task",
@@ -47,6 +51,8 @@ ACTIONS = {
     "list_resources",
     "view_resource_file",
     "search_resource_sql",
+    "find_resource_usage",
+    "search_country_git_sql",
 }
 
 
@@ -116,9 +122,14 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 bool(args.task_name or args.task_code),
                 "get_task_log requires --task-name or --task-code when --task-instance-id is absent",
             )
-    if args.action == "retry_instance":
-        _require(bool(args.project_code), "retry_instance requires --project-code")
-        _require(bool(args.instance_id), "retry_instance requires --instance-id")
+    if args.action in {"retry_instance", "stop_instance", "force_fail_instance"}:
+        _require(bool(args.project_code), f"{args.action} requires --project-code")
+        _require(bool(args.instance_id), f"{args.action} requires --instance-id")
+    if args.action == "resolve_project":
+        _require(
+            bool(args.project_code or args.project_name),
+            "resolve_project requires --project-code or --project-name",
+        )
     if args.action == "get_workflow":
         _require(bool(args.workflow_code or args.workflow_name), "get_workflow requires --workflow-code or --workflow-name")
     if args.action == "get_schedule":
@@ -150,6 +161,16 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(
             bool(args.sql_query or args.sql),
             "search_resource_sql requires --sql-query or --sql",
+        )
+    if args.action == "find_resource_usage":
+        _require(
+            bool(args.full_name or args.resource_full_name or args.file_name or args.resource_name),
+            "find_resource_usage requires --full-name or --file-name",
+        )
+    if args.action == "search_country_git_sql":
+        _require(
+            bool(args.sql_query or args.sql),
+            "search_country_git_sql requires --sql-query or --sql",
         )
     if args.action in {"disable_task", "delete_task"}:
         _require(bool(args.project_code), f"{args.action} requires --project-code")
@@ -199,6 +220,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         "request_id": args.request_id or datetime.now().strftime("%Y%m%d-%H%M%S"),
         "payload": {
             "project_code": args.project_code or "",
+            "project_name": args.project_name or "",
             "workflow_code": args.workflow_code or "",
             "workflow_name": args.workflow_name or "",
             "description": args.description or "",
@@ -397,6 +419,7 @@ def main() -> None:
     parser.add_argument("--ds-token", required=True)
     parser.add_argument("--request-id")
     parser.add_argument("--project-code")
+    parser.add_argument("--project-name")
     parser.add_argument("--workflow-code")
     parser.add_argument("--workflow-name")
     parser.add_argument("--description")
