@@ -43,6 +43,7 @@
 ## 当前支持动作
 
 - `list_projects`
+- `resolve_project`
 - `list_workflows`
 - `create_workflow`
 - `list_schedules`
@@ -61,6 +62,9 @@
 - `list_task_instances`
 - `get_task_log`
 - `retry_instance`
+- `stop_instance`
+- `force_fail_instance`
+- `check_failed_instances`
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
@@ -77,6 +81,35 @@
 - `list_resources`
 - `view_resource_file`
 - `search_resource_sql`
+- `find_resource_usage`
+- `search_country_git_sql`
+
+### `resolve_project`
+
+必填其一：
+- `project_code`
+- `project_name`
+
+按名称解析时只接受唯一精确匹配；无匹配返回 `PROJECT_NOT_FOUND`，名称
+歧义返回 `AMBIGUOUS_PROJECT`。
+
+### `stop_instance`
+
+必填：
+- `project_code`
+- `instance_id`
+
+只调用 DolphinScheduler 官方 `executeType=STOP`。操作前读取实例状态，
+已停止时幂等成功，完成态实例返回 `INVALID_INSTANCE_STATE`。
+
+### `force_fail_instance`
+
+必填：
+- `project_code`
+- `instance_id`
+
+仅使用国家配置中已验证的官方 API 映射。未配置或官方不支持时返回
+`UNSUPPORTED`；不会修改 DS 元数据库，也不会降级成停止。
 
 ## 修改类动作的前置校验
 

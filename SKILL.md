@@ -30,6 +30,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - 用户要操作 `cn / ine / mx / ph / pk / th`
 - 用户要做：
   - `list_projects`
+  - `resolve_project`
   - `list_workflows`
   - `create_workflow`
   - `list_schedules`
@@ -48,12 +49,17 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `list_task_instances`
   - `get_task_log`
   - `retry_instance`
+  - `stop_instance`
+  - `force_fail_instance`
+  - `check_failed_instances`
   - `list_datasources`
   - `get_datasource`
   - `extract_task_runtime_config`
   - `list_resources`
   - `view_resource_file`
   - `search_resource_sql`
+  - `find_resource_usage`
+  - `search_country_git_sql`
   - `dump_workflow_graph`
   - `append_task`
   - `append_sql_task`
@@ -185,6 +191,16 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - 返回结果要解释成用户可理解的结论，而不是只贴原始 JSON
 
 ## 动作边界
+
+### 实例变更类
+
+- `stop_instance`：仅通过 DS 官方 `STOP` 执行类型停止运行实例。
+- `force_fail_instance`：仅在国家配置声明了已验证的官方执行类型时可用；
+  否则返回 `UNSUPPORTED`。
+- 两个动作都必须由用户提供 `ds_token`，并在执行前明确确认具体
+  `country / project_code / instance_id`。
+- 禁止直接修改 DolphinScheduler 元数据库，禁止把
+  `force_fail_instance` 静默降级为 `stop_instance`。
 
 ### 查询类
 

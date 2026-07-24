@@ -36,6 +36,7 @@
 | 动作 | 主要用途 |
 |---|---|
 | `list_projects` | 查项目 |
+| `resolve_project` | 按 code 或唯一精确名称解析项目 |
 | `list_workflows` | 查工作流列表 |
 | `create_workflow` | 在项目下创建空 workflow |
 | `get_workflow` | 查某个工作流详情 |
@@ -47,6 +48,9 @@
 | `list_task_instances` | 查某次工作流实例下的任务实例明细 |
 | `get_task_log` | 拉取具体任务实例运行日志 |
 | `retry_instance` | 重跑失败实例 |
+| `stop_instance` | 通过官方 API 停止运行实例 |
+| `force_fail_instance` | 通过已配置的官方 API 强制失败实例 |
+| `check_failed_instances` | 检查连续失败或陈旧调度 |
 | `dump_workflow_graph` | 导出 DAG 结构 |
 | `append_task` | 通用追加任务 |
 | `append_sql_task` | 追加 SQL 任务 |
@@ -57,6 +61,10 @@
 | `disable_task` | 下线已有任务但不删除节点 |
 | `disable_tasks_except` | 保留白名单，其余任务批量下线 |
 | `delete_task` | 删除已有任务 |
+
+> `stop_instance` 和 `force_fail_instance` 都会改变运行状态，必须先由用户
+> 明确确认具体实例。强制失败未被国家官方 API 支持时返回 `UNSUPPORTED`；
+> 系统绝不直接修改 DolphinScheduler 元数据库。
 
 明确禁止：
 

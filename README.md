@@ -14,6 +14,7 @@
 ## 当前支持
 
 - `list_projects`
+- `resolve_project`
 - `list_workflows`
 - `create_workflow`
 - `list_schedules`
@@ -32,12 +33,17 @@
 - `list_task_instances`
 - `get_task_log`
 - `retry_instance`
+- `stop_instance`
+- `force_fail_instance`
+- `check_failed_instances`
 - `list_datasources`
 - `get_datasource`
 - `extract_task_runtime_config`
 - `list_resources`
 - `view_resource_file`
 - `search_resource_sql`
+- `find_resource_usage`
+- `search_country_git_sql`
 - `dump_workflow_graph`
 - `append_task`
 - `append_sql_task`
@@ -96,6 +102,11 @@
 - `view_resource_file` 用于读取资源中心文件内容，支持直接传 `full_name`，也支持在指定目录下按 `file_name` 解析
 - `search_resource_sql` 会遍历资源中心文本文件，按 SQL 片段搜索命中文件，便于从资源文件里反查对应脚本
 - `online_schedule` / `offline_schedule` 已增加短轮询确认，返回时会尽量让 `get_schedule` 直接读到目标状态
+- `stop_instance` 只调用 DS 官方 `STOP` 接口；执行前必须由用户明确确认具体实例
+- `force_fail_instance` 只使用国家配置中已验证的官方 API；未支持时返回 `UNSUPPORTED`
+- 不存在直接修改 DS 元数据库的降级路径
+- 最新可导入 Router 为 `n8n/ds-scheduler-router.latest.json`，由用户提供的
+  `ds-scheduler-router (2).json` 基线增量生成
 
 ## 明确禁止
 

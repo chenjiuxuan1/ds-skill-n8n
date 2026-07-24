@@ -136,6 +136,32 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-name "ods_repay_asset"
 ```
 
+## 9.1 停止运行实例
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action stop_instance \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --instance-id 23511030
+```
+
+## 9.2 请求强制失败实例
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action force_fail_instance \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --instance-id 23511030
+```
+
+国家未配置已验证的官方执行类型时会返回 `UNSUPPORTED`。
+
 ## 10. 修改已有 SQL 任务内容
 
 ```bash

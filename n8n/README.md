@@ -81,6 +81,7 @@ git pull internal main
 ## 当前支持动作
 
 - `list_projects`
+- `resolve_project`
 - `list_workflows`
 - `create_workflow`
 - `list_schedules`
@@ -99,9 +100,21 @@ git pull internal main
 - `list_task_instances`
 - `get_task_log`
 - `retry_instance`
+- `stop_instance`
+- `force_fail_instance`
+- `check_failed_instances`
 - `list_datasources`
 - `get_datasource`
 - `extract_task_runtime_config`
+- `list_resources`
+- `view_resource_file`
+- `search_resource_sql`
+- `find_resource_usage`
+- `search_country_git_sql`
+
+最新可导入工作流为 `ds-scheduler-router.latest.json`。它严格基于用户提供的
+`ds-scheduler-router (2).json` 增量修改，保留 24 个节点、19 组连接、六国
+分流、代码拉取和审计链路，只在“解析并标准化请求”节点增加实例动作契约。
 - `append_task`
 - `append_sql_task`
 - `append_shell_task`
