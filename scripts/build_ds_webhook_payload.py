@@ -13,6 +13,7 @@ from typing import Any, Dict
 COUNTRIES = {"cn", "ine", "mx", "ph", "pk", "th"}
 ACTIONS = {
     "resolve_project",
+    "list_alert_groups",
     "list_projects",
     "list_workflows",
     "create_workflow",
@@ -20,6 +21,7 @@ ACTIONS = {
     "get_schedule",
     "create_schedule",
     "update_schedule",
+    "batch_update_schedule_alerts",
     "online_schedule",
     "offline_schedule",
     "schedule_blast_radius",
@@ -86,12 +88,24 @@ def _normalize_task_type(task_type: str | None, action: str) -> str:
     return aliases.get(normalized, normalized)
 
 
+def _normalize_warning_type(warning_type: str | None) -> str:
+    if not warning_type:
+        return ""
+    normalized = warning_type.strip().upper()
+    _require(
+        normalized in {"NONE", "SUCCESS", "FAILURE", "ALL"},
+        "warning_type must be one of NONE, SUCCESS, FAILURE, ALL",
+    )
+    return normalized
+
+
 def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
     _require(args.country in COUNTRIES, f"Unsupported country: {args.country}")
     _require(args.action in ACTIONS, f"Unsupported action: {args.action}")
     _require(bool(args.ds_token), "ds_token is required")
 
     task_type = _normalize_task_type(args.task_type, args.action)
+    warning_type = _normalize_warning_type(args.warning_type)
 
     if args.action in {"online_workflow", "offline_workflow", "trigger_workflow", "dump_workflow_graph", "schedule_blast_radius"}:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
@@ -140,7 +154,37 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.workflow_code or args.action == 'update_schedule'), f"{args.action} requires --workflow-code")
         if args.action == "update_schedule":
             _require(bool(args.schedule_id or args.workflow_code), "update_schedule requires --schedule-id or --workflow-code")
-        _require(bool(args.schedule_json or args.crontab), f"{args.action} requires --schedule-json or --crontab")
+        has_schedule_change = bool(args.schedule_json or args.crontab)
+        has_alert_change = bool(warning_type or args.warning_group_id)
+        if args.action == "create_schedule":
+            _require(has_schedule_change, "create_schedule requires --schedule-json or --crontab")
+        else:
+            _require(
+                has_schedule_change or has_alert_change,
+                "update_schedule requires schedule fields or warning_type/warning_group_id",
+            )
+    if args.action == "batch_update_schedule_alerts":
+        project_names = _load_json(args.project_names_json, [])
+        _require(
+            isinstance(project_names, list)
+            and bool(project_names)
+            and all(isinstance(value, str) and value.strip() for value in project_names)
+            and len({value.strip() for value in project_names}) == len(project_names),
+            "batch_update_schedule_alerts requires project_names as unique non-empty strings",
+        )
+        _require(
+            str(args.workflow_release_state or "ONLINE").strip().upper() == "ONLINE",
+            "workflow_release_state must be ONLINE",
+        )
+        _require(
+            str(args.schedule_release_state or "ONLINE").strip().upper() == "ONLINE",
+            "schedule_release_state must be ONLINE",
+        )
+        _require(bool(warning_type), "batch_update_schedule_alerts requires --warning-type")
+        _require(bool(args.warning_group_name), "batch_update_schedule_alerts requires --warning-group-name")
+        _require(1 <= args.retry_attempts <= 5, "retry_attempts must be between 1 and 5")
+        _require(0 <= args.retry_delay_ms <= 10000, "retry_delay_ms must be between 0 and 10000")
+        _require(0 <= args.rate_limit_ms <= 10000, "rate_limit_ms must be between 0 and 10000")
     if args.action in {"online_schedule", "offline_schedule"}:
         _require(bool(args.project_code), f"{args.action} requires --project-code")
         _require(bool(args.schedule_id or args.workflow_code), f"{args.action} requires --schedule-id or --workflow-code")
@@ -291,7 +335,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "start_time": args.start_time or "",
                 "end_time": args.end_time or "",
                 "timezone_id": args.timezone_id or "",
-                "warning_type": args.warning_type or "",
+                "warning_type": warning_type,
                 "warning_group_id": args.warning_group_id or "",
                 "failure_strategy": args.failure_strategy or "",
                 "process_instance_priority": args.process_instance_priority or "",
@@ -299,6 +343,21 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "tenant_code": args.tenant_code or "",
                 "environment_code": args.environment_code or "",
                 "release_state": args.release_state or "",
+            }
+        )
+
+    if args.action == "batch_update_schedule_alerts":
+        extra_payload.update(
+            {
+                "project_names": [value.strip() for value in _load_json(args.project_names_json, [])],
+                "workflow_release_state": str(args.workflow_release_state or "ONLINE").strip().upper(),
+                "schedule_release_state": str(args.schedule_release_state or "ONLINE").strip().upper(),
+                "warning_type": warning_type,
+                "warning_group_name": str(args.warning_group_name or "").strip(),
+                "dry_run": True if args.dry_run is None else args.dry_run,
+                "retry_attempts": args.retry_attempts,
+                "retry_delay_ms": args.retry_delay_ms,
+                "rate_limit_ms": args.rate_limit_ms,
             }
         )
 
@@ -420,6 +479,7 @@ def main() -> None:
     parser.add_argument("--request-id")
     parser.add_argument("--project-code")
     parser.add_argument("--project-name")
+    parser.add_argument("--project-names-json")
     parser.add_argument("--workflow-code")
     parser.add_argument("--workflow-name")
     parser.add_argument("--description")
@@ -451,6 +511,16 @@ def main() -> None:
     parser.add_argument("--timeout", type=int)
     parser.add_argument("--warning-type")
     parser.add_argument("--warning-group-id")
+    parser.add_argument("--warning-group-name")
+    parser.add_argument("--workflow-release-state")
+    parser.add_argument("--schedule-release-state")
+    execution_group = parser.add_mutually_exclusive_group()
+    execution_group.add_argument("--dry-run", dest="dry_run", action="store_true")
+    execution_group.add_argument("--execute", dest="dry_run", action="store_false")
+    parser.set_defaults(dry_run=None)
+    parser.add_argument("--retry-attempts", type=int, default=2)
+    parser.add_argument("--retry-delay-ms", type=int, default=250)
+    parser.add_argument("--rate-limit-ms", type=int, default=100)
     parser.add_argument("--failure-strategy")
     parser.add_argument("--process-instance-priority")
     parser.add_argument("--release-state")

@@ -12,6 +12,7 @@ const FORBIDDEN_ACTION_ALIASES = new Set([
 const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
   'resolve_project',
+  'list_alert_groups',
   'list_projects',
   'list_workflows',
   'create_workflow',
@@ -19,6 +20,7 @@ const ACTIONS = new Set([
   'get_schedule',
   'create_schedule',
   'update_schedule',
+  'batch_update_schedule_alerts',
   'online_schedule',
   'offline_schedule',
   'schedule_blast_radius',
@@ -64,6 +66,7 @@ const inputPayload = raw.payload && typeof raw.payload === 'object' ? raw.payloa
 const payload = {
   project_code: inputPayload.project_code || '',
   project_name: inputPayload.project_name || '',
+  project_names: Array.isArray(inputPayload.project_names) ? inputPayload.project_names : [],
   workflow_code: inputPayload.workflow_code || '',
   workflow_name: inputPayload.workflow_name || '',
   description: inputPayload.description || '',
@@ -86,6 +89,13 @@ const payload = {
   timezone_id: inputPayload.timezone_id || '',
   warning_type: inputPayload.warning_type || '',
   warning_group_id: inputPayload.warning_group_id || '',
+  warning_group_name: inputPayload.warning_group_name || '',
+  workflow_release_state: inputPayload.workflow_release_state || '',
+  schedule_release_state: inputPayload.schedule_release_state || '',
+  dry_run: inputPayload.dry_run,
+  retry_attempts: inputPayload.retry_attempts ?? 2,
+  retry_delay_ms: inputPayload.retry_delay_ms ?? 250,
+  rate_limit_ms: inputPayload.rate_limit_ms ?? 100,
   failure_strategy: inputPayload.failure_strategy || '',
   process_instance_priority: inputPayload.process_instance_priority || '',
   worker_group: inputPayload.worker_group || '',
@@ -212,8 +222,47 @@ if (['create_schedule', 'update_schedule'].includes(action)) {
   if (action === 'update_schedule' && !payload.workflow_code && !payload.schedule_id) {
     errors.push('update_schedule requires workflow_code or schedule_id');
   }
-  if (!payload.schedule_json && !payload.crontab) {
-    errors.push(`${action} requires schedule_json or crontab`);
+  const hasScheduleChange = Boolean(payload.schedule_json || payload.crontab);
+  const hasAlertChange = Boolean(payload.warning_type || payload.warning_group_id);
+  if (action === 'create_schedule' && !hasScheduleChange) {
+    errors.push('create_schedule requires schedule_json or crontab');
+  }
+  if (action === 'update_schedule' && !hasScheduleChange && !hasAlertChange) {
+    errors.push('update_schedule requires schedule fields or warning_type/warning_group_id');
+  }
+}
+if (payload.warning_type) {
+  payload.warning_type = String(payload.warning_type).trim().toUpperCase();
+  if (!['NONE', 'SUCCESS', 'FAILURE', 'ALL'].includes(payload.warning_type)) {
+    errors.push('warning_type must be one of NONE, SUCCESS, FAILURE, ALL');
+  }
+}
+if (action === 'batch_update_schedule_alerts') {
+  if (!payload.project_names.length) {
+    errors.push('batch_update_schedule_alerts requires project_names');
+  } else if (payload.project_names.some((value) => typeof value !== 'string' || !value.trim())
+    || new Set(payload.project_names.map((value) => value.trim())).size !== payload.project_names.length) {
+    errors.push('project_names must contain unique non-empty strings');
+  } else {
+    payload.project_names = payload.project_names.map((value) => value.trim());
+  }
+  payload.workflow_release_state = String(payload.workflow_release_state || 'ONLINE').trim().toUpperCase();
+  payload.schedule_release_state = String(payload.schedule_release_state || 'ONLINE').trim().toUpperCase();
+  if (payload.workflow_release_state !== 'ONLINE' || payload.schedule_release_state !== 'ONLINE') {
+    errors.push('workflow_release_state and schedule_release_state must both be ONLINE');
+  }
+  if (!payload.warning_type) errors.push('batch_update_schedule_alerts requires warning_type');
+  if (!payload.warning_group_name) errors.push('batch_update_schedule_alerts requires warning_group_name');
+  if (typeof payload.dry_run === 'undefined') payload.dry_run = true;
+  if (typeof payload.dry_run !== 'boolean') errors.push('dry_run must be a boolean');
+  for (const [field, minimum, maximum] of [
+    ['retry_attempts', 1, 5],
+    ['retry_delay_ms', 0, 10000],
+    ['rate_limit_ms', 0, 10000],
+  ]) {
+    if (!Number.isInteger(payload[field]) || payload[field] < minimum || payload[field] > maximum) {
+      errors.push(`${field} must be an integer between ${minimum} and ${maximum}`);
+    }
   }
 }
 if (action === 'get_instance' && !payload.instance_id) {
