@@ -17,7 +17,7 @@ ARTIFACTS = {
     ROOT / "n8n/ds-scheduler-router.latest.json": {
         "nodes": 24,
         "connections": 19,
-        "structural_hash": "cabd54997658b183cb9128f07b02ddec627f14fafea4e53aa1ad629c5395c7b4",
+        "structural_hash": "49ebedf634bb48e6814e1be48a5c7ac7b7d963edd405340e9c84ac2e470d3798",
     },
 }
 
@@ -63,6 +63,17 @@ class RouterArtifactTests(unittest.TestCase):
                     "list_alert_groups",
                     "batch_update_schedule_alerts",
                 }.issubset(actions(expected_code)))
+
+    def test_latest_router_audits_batch_alert_updates_as_risky(self):
+        workflow = json.loads(
+            (ROOT / "n8n/ds-scheduler-router.latest.json").read_text(encoding="utf-8")
+        )
+        audit_node = next(
+            node for node in workflow["nodes"] if node["name"] == "构造审计写入SQL"
+        )
+        code = audit_node["parameters"]["jsCode"]
+        risk_body = re.search(r"const riskActions = new Set\(\[(.*?)\]\);", code, re.S).group(1)
+        self.assertIn("batch_update_schedule_alerts", risk_body)
 
 
 if __name__ == "__main__":

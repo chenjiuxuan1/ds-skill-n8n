@@ -14,6 +14,8 @@
 
 导入或发布工作流前，确认 `workflow-template.json` 和 `ds-scheduler-router.latest.json` 的“解析并标准化请求”代码与 `request_normalizer.js` 完全一致。
 
+修改 normalizer 后运行 `python3 scripts/sync_schedule_alert_router.py` 同步两个制品；脚本还会把批量告警修改登记为最新 Router 的风险审计动作，但审计只持久化 `ds_token_present` 布尔值，不持久化 token 明文。
+
 这版 skill 对应的是当前已经打通的中转结构：
 
 ```text
