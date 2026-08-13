@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import shlex
+from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict
 
@@ -57,6 +58,23 @@ ACTIONS = {
     "search_country_git_sql",
 }
 
+ROLLBACK_PAYLOAD_FIELDS = {
+    "country",
+    "project_code",
+    "workflow_code",
+    "schedule_id",
+    "schedule_json",
+    "warning_type",
+    "warning_group_id",
+    "failure_strategy",
+    "process_instance_priority",
+    "worker_group",
+    "tenant_code",
+    "environment_code",
+    "release_state",
+    "start_params",
+}
+
 
 def _load_json(raw: str | None, default: Any) -> Any:
     if not raw:
@@ -104,8 +122,24 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
     _require(args.action in ACTIONS, f"Unsupported action: {args.action}")
     _require(bool(args.ds_token), "ds_token is required")
 
+    rollback_payload = _load_json(getattr(args, "rollback_payload_json", None), {})
+    _require(isinstance(rollback_payload, dict), "rollback_payload_json must be a JSON object")
+    if rollback_payload:
+        _require(args.action == "update_schedule", "rollback_payload_json is only valid for update_schedule")
+        unknown_fields = sorted(set(rollback_payload) - ROLLBACK_PAYLOAD_FIELDS)
+        _require(not unknown_fields, f"rollback_payload_json has unsupported fields: {', '.join(unknown_fields)}")
+        _require(
+            not rollback_payload.get("country") or rollback_payload.get("country") == args.country,
+            "rollback payload country must match --country",
+        )
+
     task_type = _normalize_task_type(args.task_type, args.action)
-    warning_type = _normalize_warning_type(args.warning_type)
+    warning_type = _normalize_warning_type(
+        args.warning_type or rollback_payload.get("warning_type")
+    )
+    project_code = args.project_code or rollback_payload.get("project_code") or ""
+    workflow_code = args.workflow_code or rollback_payload.get("workflow_code") or ""
+    schedule_id = args.schedule_id or rollback_payload.get("schedule_id") or ""
 
     if args.action in {"online_workflow", "offline_workflow", "trigger_workflow", "dump_workflow_graph", "schedule_blast_radius"}:
         _require(bool(args.workflow_code), f"{args.action} requires --workflow-code")
@@ -150,12 +184,16 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         _require(bool(args.project_code), "get_schedule requires --project-code")
         _require(bool(args.schedule_id or args.workflow_code or args.workflow_name), "get_schedule requires --schedule-id or --workflow-code or --workflow-name")
     if args.action in {"create_schedule", "update_schedule"}:
-        _require(bool(args.project_code), f"{args.action} requires --project-code")
-        _require(bool(args.workflow_code or args.action == 'update_schedule'), f"{args.action} requires --workflow-code")
+        _require(bool(project_code), f"{args.action} requires --project-code")
+        _require(bool(workflow_code or args.action == 'update_schedule'), f"{args.action} requires --workflow-code")
         if args.action == "update_schedule":
-            _require(bool(args.schedule_id or args.workflow_code), "update_schedule requires --schedule-id or --workflow-code")
-        has_schedule_change = bool(args.schedule_json or args.crontab)
-        has_alert_change = bool(warning_type or args.warning_group_id)
+            _require(bool(schedule_id or workflow_code), "update_schedule requires --schedule-id or --workflow-code")
+        has_schedule_change = bool(args.schedule_json or args.crontab or rollback_payload.get("schedule_json"))
+        has_alert_change = bool(
+            warning_type
+            or args.warning_group_id
+            or rollback_payload.get("warning_group_id") not in (None, "")
+        )
         if args.action == "create_schedule":
             _require(has_schedule_change, "create_schedule requires --schedule-json or --crontab")
         else:
@@ -263,9 +301,9 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         "ds_token": args.ds_token,
         "request_id": args.request_id or datetime.now().strftime("%Y%m%d-%H%M%S"),
         "payload": {
-            "project_code": args.project_code or "",
+            "project_code": project_code,
             "project_name": args.project_name or "",
-            "workflow_code": args.workflow_code or "",
+            "workflow_code": workflow_code,
             "workflow_name": args.workflow_name or "",
             "description": args.description or "",
             "instance_id": args.instance_id or "",
@@ -273,7 +311,7 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             "task_instance_id": args.task_instance_id or "",
             "start_node_list": args.start_node_list or "",
             "schedule_time": args.schedule_time or "",
-            "schedule_id": args.schedule_id or "",
+            "schedule_id": schedule_id,
             "state_type": args.state_type or "",
             "search_val": args.search_val or "",
             "page_no": args.page_no,
@@ -343,8 +381,16 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 "tenant_code": args.tenant_code or "",
                 "environment_code": args.environment_code or "",
                 "release_state": args.release_state or "",
+                "start_params": _load_json(args.start_params_json, "") if args.start_params_json else "",
             }
         )
+        if rollback_payload:
+            extra_payload.update({
+                key: deepcopy(value)
+                for key, value in rollback_payload.items()
+                if key != "country"
+            })
+            extra_payload["warning_type"] = warning_type
 
     if args.action == "batch_update_schedule_alerts":
         extra_payload.update(
@@ -462,11 +508,19 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
 
 
 def build_curl(webhook_url: str, payload: Dict[str, Any]) -> str:
-    body = json.dumps(payload, ensure_ascii=False)
+    safe_payload = deepcopy(payload)
+    safe_payload["ds_token"] = "__DS_TOKEN_FROM_ENV__"
+    body = json.dumps(safe_payload, ensure_ascii=False)
+    prefix, suffix = body.split("__DS_TOKEN_FROM_ENV__", 1)
+    data_expression = (
+        shlex.quote(prefix)
+        + '"${DS_TOKEN:?set DS_TOKEN}"'
+        + shlex.quote(suffix)
+    )
     return (
         f"curl -X POST {shlex.quote(webhook_url)} "
         f"-H 'Content-Type: application/json' "
-        f"-d {shlex.quote(body)}"
+        f"-d {data_expression}"
     )
 
 
@@ -480,6 +534,7 @@ def main() -> None:
     parser.add_argument("--project-code")
     parser.add_argument("--project-name")
     parser.add_argument("--project-names-json")
+    parser.add_argument("--rollback-payload-json")
     parser.add_argument("--workflow-code")
     parser.add_argument("--workflow-name")
     parser.add_argument("--description")
@@ -524,6 +579,7 @@ def main() -> None:
     parser.add_argument("--failure-strategy")
     parser.add_argument("--process-instance-priority")
     parser.add_argument("--release-state")
+    parser.add_argument("--start-params-json")
     parser.add_argument("--schedule-json")
     parser.add_argument("--crontab")
     parser.add_argument("--start-time")
@@ -566,7 +622,9 @@ def main() -> None:
     args = parser.parse_args()
 
     payload = build_payload(args)
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    display_payload = deepcopy(payload)
+    display_payload["ds_token"] = "<DS_TOKEN>"
+    print(json.dumps(display_payload, ensure_ascii=False, indent=2))
     print()
     print("# curl")
     print(build_curl(args.webhook_url, payload))

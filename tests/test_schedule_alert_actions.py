@@ -48,6 +48,8 @@ class BuilderScheduleAlertTests(unittest.TestCase):
         self.assertEqual("n8n告警触发器", payload["search_val"])
         self.assertEqual(2, payload["page_no"])
         self.assertEqual(100, payload["page_size"])
+        self.assertNotIn("test-secret-token", completed.stdout)
+        self.assertIn("${DS_TOKEN:?set DS_TOKEN}", completed.stdout)
 
     def test_builds_safe_batch_dry_run_by_default(self):
         completed = run_builder(
@@ -128,6 +130,44 @@ class BuilderScheduleAlertTests(unittest.TestCase):
         self.assertNotEqual(0, completed.returncode)
         self.assertNotIn("test-secret-token", completed.stderr)
 
+    def test_builds_update_from_rollback_payload(self):
+        rollback = {
+            "country": "ph",
+            "project_code": "100",
+            "workflow_code": 9001,
+            "schedule_id": 501,
+            "schedule_json": {
+                "startTime": "2025-01-01 00:00:00",
+                "endTime": "2099-12-31 23:59:59",
+                "crontab": "0 0 * * * ?",
+                "timezoneId": "Asia/Manila",
+            },
+            "warning_type": "NONE",
+            "warning_group_id": 1,
+            "failure_strategy": "END",
+            "process_instance_priority": "HIGH",
+            "worker_group": "ph-data",
+            "tenant_code": "dw_user",
+            "environment_code": 99,
+            "release_state": "ONLINE",
+            "start_params": [{"prop": "dt", "value": "today"}],
+        }
+        completed = run_builder(
+            "--action",
+            "update_schedule",
+            "--rollback-payload-json",
+            json.dumps(rollback, ensure_ascii=False),
+        )
+
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        payload = parse_payload(completed.stdout)["payload"]
+        self.assertEqual("100", payload["project_code"])
+        self.assertEqual(501, payload["schedule_id"])
+        self.assertEqual("0 0 * * * ?", payload["schedule_json"]["crontab"])
+        self.assertEqual("ONLINE", payload["release_state"])
+        self.assertEqual(rollback["start_params"], payload["start_params"])
+        self.assertNotIn("ds_token", payload)
+
 
 class NormalizerScheduleAlertTests(unittest.TestCase):
     @classmethod
@@ -144,6 +184,8 @@ class NormalizerScheduleAlertTests(unittest.TestCase):
             "retry_attempts",
             "retry_delay_ms",
             "rate_limit_ms",
+            "release_state",
+            "start_params",
         ):
             self.assertIn(field, self.text)
         self.assertNotRegex(self.text, r"payload\.ds_token\s*=")

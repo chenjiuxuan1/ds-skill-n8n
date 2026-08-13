@@ -92,6 +92,10 @@ const payload = {
   warning_group_name: inputPayload.warning_group_name || '',
   workflow_release_state: inputPayload.workflow_release_state || '',
   schedule_release_state: inputPayload.schedule_release_state || '',
+  release_state: inputPayload.release_state || '',
+  start_params: inputPayload.start_params && typeof inputPayload.start_params === 'object'
+    ? inputPayload.start_params
+    : (inputPayload.start_params || ''),
   dry_run: inputPayload.dry_run,
   retry_attempts: inputPayload.retry_attempts ?? 2,
   retry_delay_ms: inputPayload.retry_delay_ms ?? 250,

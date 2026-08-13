@@ -1,5 +1,56 @@
 # Examples
 
+## 0. 定时告警安全调整
+
+先精确查询菲律宾本地告警组：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country ph \
+  --action list_alert_groups \
+  --ds-token "<DS_TOKEN>" \
+  --search-val "n8n告警触发器" \
+  --page-size 200
+```
+
+单项目 dry-run（不写 DolphinScheduler）：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country ph \
+  --action batch_update_schedule_alerts \
+  --ds-token "<DS_TOKEN>" \
+  --project-names-json '["DW_DWB"]' \
+  --workflow-release-state ONLINE \
+  --schedule-release-state ONLINE \
+  --warning-type FAILURE \
+  --warning-group-name "n8n告警触发器" \
+  --dry-run
+```
+
+查看 dry-run 后，正式批量必须显式增加 `--execute`。首次只能选一条命中记录，用 `update_schedule` 传 `project_code / schedule_id / warning_type / warning_group_id`，随后 `get_schedule` 回查并用响应中的 `rollback_payload` 恢复；恢复回查通过后才允许扩大范围。
+
+构建器不会把传入 token 回显到 stdout：展示 JSON 使用 `<DS_TOKEN>`，生成的 curl 从环境变量读取。执行生成的 curl 前，在不被日志采集的安全终端中设置：
+
+```bash
+read -s DS_TOKEN && export DS_TOKEN
+```
+
+恢复时把响应中的完整 `rollback_payload` 作为 JSON 传入；下面只展示结构，值必须来自本次更新响应：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country ph \
+  --action update_schedule \
+  --ds-token "<DS_TOKEN>" \
+  --rollback-payload-json '{"country":"ph","project_code":"<PROJECT_CODE>","workflow_code":"<WORKFLOW_CODE>","schedule_id":"<SCHEDULE_ID>","schedule_json":{"startTime":"<ORIGINAL>","endTime":"<ORIGINAL>","crontab":"<ORIGINAL>","timezoneId":"<ORIGINAL>"},"warning_type":"<ORIGINAL>","warning_group_id":"<ORIGINAL>","failure_strategy":"<ORIGINAL>","process_instance_priority":"<ORIGINAL>","worker_group":"<ORIGINAL>","tenant_code":"<ORIGINAL>","environment_code":"<ORIGINAL>","release_state":"<ORIGINAL>","start_params":"<ORIGINAL>"}'
+```
+
+不要手工推测 `<ORIGINAL>` 值；应直接复制网关返回的整个 `rollback_payload`。恢复请求成功后仍需调用 `get_schedule` 再次确认。
+
 ## 1. 查询中国工作流列表
 
 ```bash

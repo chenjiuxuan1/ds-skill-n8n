@@ -44,12 +44,14 @@
 
 - `list_projects`
 - `resolve_project`
+- `list_alert_groups`
 - `list_workflows`
 - `create_workflow`
 - `list_schedules`
 - `get_schedule`
 - `create_schedule`
 - `update_schedule`
+- `batch_update_schedule_alerts`
 - `online_schedule`
 - `offline_schedule`
 - `schedule_blast_radius`
@@ -218,9 +220,61 @@
 - `schedule_id`
 - `workflow_code`
 
-至少提供其一：
-- `schedule_json`
-- `crontab`
+至少提供一类变更：
+- 定时字段：`schedule_json` 或 `crontab`
+- 告警字段：`warning_type` 或 `warning_group_id`
+
+只提供告警字段时，网关会读取原始定时并完整保留 `schedule`、起止时间、时区、失败策略、优先级、worker group、tenant、environment、start params 和 `releaseState`。更新后会回查；验证失败时自动按原快照恢复。
+
+`warning_type` 仅允许：`NONE / SUCCESS / FAILURE / ALL`。
+
+### `list_alert_groups`
+
+可选：
+- `search_val`
+- `page_no`
+- `page_size`
+
+传 `search_val` 时按 `group_name` 精确匹配。无匹配返回 `ALERT_GROUP_NOT_FOUND`，同名多条返回 `AMBIGUOUS_ALERT_GROUP`，禁止自动选择。
+
+### `batch_update_schedule_alerts`
+
+必填：
+- `project_names`：唯一、非空项目名数组
+- `warning_type`
+- `warning_group_name`
+
+状态条件固定为：
+- `workflow_release_state=ONLINE`
+- `schedule_release_state=ONLINE`
+
+可选：
+- `dry_run`：默认 `true`
+- `retry_attempts`：默认 2，范围 1–5
+- `retry_delay_ms`：默认 250，范围 0–10000
+- `rate_limit_ms`：默认 100，范围 0–10000
+
+服务端实时解析本国项目 code 和本国告警组 ID；任何项目或告警组缺失/歧义都会使该国家在零写入状态结束。结果状态包括：
+- `DRY_RUN_MATCHED`
+- `UPDATED`
+- `SKIPPED_ALREADY_MATCHED`
+- `SKIPPED_NOT_ONLINE`
+- `FAILED_UNCHANGED`
+- `FAILED_ROLLED_BACK`
+- `VERIFICATION_FAILED_ROLLED_BACK`
+- `FAILED_ROLLBACK_FAILED`
+
+汇总字段：`total / matched / updated / skipped / failed / verification_failed / rolled_back / rollback_failed`。每个可修改项返回不含 token 的 `rollback_payload`。
+
+### rollback payload
+
+`rollback_payload` 由网关从更新前快照生成，字段为：
+
+`country / project_code / workflow_code / schedule_id / schedule_json / warning_type / warning_group_id / failure_strategy / process_instance_priority / worker_group / tenant_code / environment_code / release_state / start_params`。
+
+可用 `build_ds_webhook_payload.py --action update_schedule --rollback-payload-json '<完整 JSON>'` 构建恢复请求。构建器拒绝未知字段、国家不一致或包含额外敏感字段的 payload。
+
+构建器默认不在 stdout 回显真实 token。打印的 JSON 使用 `<DS_TOKEN>`；打印的 curl 使用 `${DS_TOKEN:?set DS_TOKEN}`，执行前应从安全输入或密钥管理器注入环境变量，禁止把 token 写入命令历史或日志。
 
 ### `online_schedule`
 

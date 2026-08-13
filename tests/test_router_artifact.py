@@ -2,47 +2,67 @@ import hashlib
 import json
 import re
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = Path("/Users/jiangchuanchen/Downloads/ds-scheduler-router (2).json")
-ARTIFACT = ROOT / "n8n/ds-scheduler-router.latest.json"
+NORMALIZER = ROOT / "n8n/request_normalizer.js"
+ARTIFACTS = {
+    ROOT / "n8n/workflow-template.json": {
+        "nodes": 21,
+        "connections": 17,
+        "structural_hash": "771bff09f36e5d8bf57cf38d7ac6d5c0043e8e463c3ab6ebc2cd6e4090a66ee5",
+    },
+    ROOT / "n8n/ds-scheduler-router.latest.json": {
+        "nodes": 24,
+        "connections": 19,
+        "structural_hash": "cabd54997658b183cb9128f07b02ddec627f14fafea4e53aa1ad629c5395c7b4",
+    },
+}
 
 
-def actions(workflow):
-    node = next(node for node in workflow["nodes"] if node["name"] == "解析并标准化请求")
-    code = node["parameters"]["jsCode"]
+def normalizer_node(workflow):
+    nodes = [node for node in workflow["nodes"] if node["name"] == "解析并标准化请求"]
+    if len(nodes) != 1:
+        raise AssertionError("expected exactly one request normalizer node")
+    return nodes[0]
+
+
+def structural_hash(workflow):
+    sanitized = deepcopy(workflow)
+    normalizer_node(sanitized)["parameters"]["jsCode"] = "<NORMALIZER>"
+    raw = json.dumps(
+        sanitized,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def actions(code):
     body = re.search(r"const ACTIONS = new Set\(\[(.*?)\]\);", code, re.S).group(1)
     return set(re.findall(r"'([^']+)'", body))
 
 
 class RouterArtifactTests(unittest.TestCase):
-    def test_artifact_is_incremental_patch_of_approved_baseline(self):
-        self.assertEqual(
-            "16009d22a58df418684adfec09338ee804c6216c641e11cc1373ceb3baac4361",
-            hashlib.sha256(BASELINE.read_bytes()).hexdigest(),
-        )
-        baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
-        artifact = json.loads(ARTIFACT.read_text(encoding="utf-8"))
-        self.assertEqual(24, len(artifact["nodes"]))
-        self.assertEqual(19, len(artifact["connections"]))
-        self.assertEqual(
-            actions(baseline) | {"stop_instance", "force_fail_instance"},
-            actions(artifact),
-        )
-        self.assertEqual(baseline["connections"], artifact["connections"])
-        before = {node["name"]: node for node in baseline["nodes"]}
-        after = {node["name"]: node for node in artifact["nodes"]}
-        for name in before:
-            if name == "解析并标准化请求":
-                continue
-            self.assertEqual(before[name], after[name], name)
-        self.assertEqual(
-            before["解析并标准化请求"]["id"],
-            after["解析并标准化请求"]["id"],
-        )
-        self.assertIn("resolve_project", actions(artifact))
+    def test_artifacts_embed_the_checked_in_normalizer_only(self):
+        expected_code = NORMALIZER.read_text(encoding="utf-8")
+        for path, expected in ARTIFACTS.items():
+            with self.subTest(path=path.name):
+                workflow = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(expected["nodes"], len(workflow["nodes"]))
+                self.assertEqual(expected["connections"], len(workflow["connections"]))
+                self.assertEqual(expected["structural_hash"], structural_hash(workflow))
+                self.assertEqual(expected_code, normalizer_node(workflow)["parameters"]["jsCode"])
+                self.assertTrue({
+                    "resolve_project",
+                    "stop_instance",
+                    "force_fail_instance",
+                    "list_alert_groups",
+                    "batch_update_schedule_alerts",
+                }.issubset(actions(expected_code)))
 
 
 if __name__ == "__main__":

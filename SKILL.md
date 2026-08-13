@@ -1,6 +1,6 @@
 ---
 name: ds-scheduler
-description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, task instances, task logs, datasources, resource-center files, or append/update/disable/delete SQL and SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th. The current skill has been live-tested for create_workflow, create/update/online/offline schedule, get_task_log, retry_instance, append/update SQL tasks, and append/update SHELL tasks.
+description: Use when the user wants Codex to inspect or operate DolphinScheduler 3.4 projects, workflows, schedules, schedule alerts, task instances, task logs, datasources, resource-center files, or SQL/SHELL tasks through the multi-country n8n gateway for cn, ine, mx, ph, pk, or th.
 ---
 
 # DS Scheduler
@@ -31,12 +31,14 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - 用户要做：
   - `list_projects`
   - `resolve_project`
+  - `list_alert_groups`
   - `list_workflows`
   - `create_workflow`
   - `list_schedules`
   - `get_schedule`
   - `create_schedule`
   - `update_schedule`
+  - `batch_update_schedule_alerts`
   - `online_schedule`
   - `offline_schedule`
   - `schedule_blast_radius`
@@ -139,6 +141,11 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `end_time`
 - `warning_type`
 - `warning_group_id`
+- `warning_group_name`
+- `project_names`
+- `workflow_release_state`
+- `schedule_release_state`
+- `dry_run`
 - `failure_strategy`
 - `process_instance_priority`
 - `worker_group`
@@ -211,6 +218,35 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `list_instances`
 - `get_instance`
 - `dump_workflow_graph`
+- `list_alert_groups`
+
+### 定时告警修改类
+
+- `update_schedule`：只传 `warning_type` / `warning_group_id` 时，网关先读取完整原定时，再合并写回；不得自行补 cron 或默认值。
+- `batch_update_schedule_alerts`：按项目名白名单实时解析项目、工作流、定时和本国告警组。默认 `dry_run=true`，只处理工作流与定时均为 `ONLINE` 的记录。
+
+## 定时告警安全门禁
+
+正式操作必须按以下顺序，不得跳步：
+
+1. `list_alert_groups` 用告警组完整名称精确查找；0 条或多条都停止。
+2. 对单个国家、单个项目执行 `batch_update_schedule_alerts`，保持 `dry_run=true`。
+3. 从命中结果选一条定时，用 `update_schedule` 只传告警字段正式更新。
+4. 立即 `get_schedule`，确认告警、上线状态、cron、时区和非目标字段均正确。
+5. 使用返回的 `rollback_payload` 调用 `update_schedule` 恢复。
+6. 再次 `get_schedule`，确认完整恢复后，才允许扩大 dry-run 范围。
+7. 全量 `dry_run=false` 必须由用户在查看三国 dry-run 结果后明确批准。
+
+规则：
+
+- `warning_type` 仅允许 `NONE / SUCCESS / FAILURE / ALL`。
+- 批量告警修改当前只允许 `workflow_release_state=ONLINE` 且 `schedule_release_state=ONLINE`。
+- 禁止为了修改在线定时而自动下线/上线；原定时状态必须保持不变。
+- `SKIPPED_ALREADY_MATCHED` 和 `SKIPPED_NOT_ONLINE` 不执行写入。
+- 单条失败必须保留逐条结果；`FAILED_ROLLBACK_FAILED` 需要立即人工处理并停止扩大范围。
+- `ds_token` 只从当前用户请求传入，不写入文档、rollback payload、错误信息或持久化文件。
+- 构建器 stdout 必须脱敏；生成 curl 时通过 `DS_TOKEN` 环境变量注入，不把真实 token 写入命令历史。
+- 恢复时直接传完整 `rollback_payload` 给 `--rollback-payload-json`，禁止手工猜测原字段。
 
 ### 控制类
 

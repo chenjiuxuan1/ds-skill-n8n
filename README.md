@@ -15,12 +15,14 @@
 
 - `list_projects`
 - `resolve_project`
+- `list_alert_groups`
 - `list_workflows`
 - `create_workflow`
 - `list_schedules`
 - `get_schedule`
 - `create_schedule`
 - `update_schedule`
+- `batch_update_schedule_alerts`
 - `online_schedule`
 - `offline_schedule`
 - `schedule_blast_radius`
@@ -156,6 +158,18 @@ User
 - `ds_token` 决定这次请求能操作哪些项目、工作流、实例
 - skill 和 n8n 都不应该默认内置共享 token
 - 当用户没有提供 token 时，Codex 应先提示用户补充自己的 token，再执行正式请求
+- token 不得写入仓库文件、错误信息、审计日志或 rollback payload；展示诊断信息时必须脱敏
+- payload 构建器的 stdout 会将 token 显示为 `<DS_TOKEN>`，curl 从 `DS_TOKEN` 环境变量读取；不要把真实 token 作为可记录的命令参数长期保留
+
+## 批量定时告警
+
+`list_alert_groups` 支持六国告警组分页查询；指定 `search_val` 后只接受名称精确唯一匹配。
+
+`batch_update_schedule_alerts` 接收项目名白名单，服务端实时查询项目 code、工作流和定时状态，只处理工作流与定时均为 `ONLINE` 的记录，并实时解析各国自己的 `n8n告警触发器` ID。默认 `dry_run=true`；正式执行必须显式使用 `--execute`。
+
+每条正式更新都保存完整原配置、写后调用 `get_schedule` 验证，并在失败时恢复原快照。网关不会为了修改告警而自动上下线定时。上线前必须完成“精确查组 → 单项目 dry-run → 单条更新 → 回查 → rollback → 再回查”的门禁流程。
+
+恢复请求可以直接用 `--rollback-payload-json '<网关返回的完整 rollback_payload>'` 构建；禁止手工补写或猜测原 cron、状态和运行参数。
 
 ## 快速开始
 

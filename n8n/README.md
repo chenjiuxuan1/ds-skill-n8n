@@ -1,5 +1,19 @@
 # n8n DS Scheduler
 
+## 定时告警动作
+
+请求 normalizer 已加入 `list_alert_groups` 与 `batch_update_schedule_alerts`，并允许 `update_schedule` 在不传 cron 的情况下只更新告警字段。
+
+- `batch_update_schedule_alerts` 默认 `dry_run=true`；只有布尔值 `false` 才会进入正式更新。
+- `project_names` 必须是唯一、非空字符串数组。
+- `warning_type` 仅允许 `NONE / SUCCESS / FAILURE / ALL`。
+- `workflow_release_state` 与 `schedule_release_state` 必须都是 `ONLINE`。
+- `retry_attempts / retry_delay_ms / rate_limit_ms` 有边界校验。
+- `release_state` 与 `start_params` 会被保留，因此网关返回的 rollback payload 可原样再次作为 `update_schedule.payload`。
+- normalizer 不会把 `ds_token` 复制进业务 `payload` 或 rollback 数据；token 仅保留在当前请求路由字段中。
+
+导入或发布工作流前，确认 `workflow-template.json` 和 `ds-scheduler-router.latest.json` 的“解析并标准化请求”代码与 `request_normalizer.js` 完全一致。
+
 这版 skill 对应的是当前已经打通的中转结构：
 
 ```text
