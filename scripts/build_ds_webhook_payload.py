@@ -18,6 +18,7 @@ ACTIONS = {
     "list_projects",
     "list_workflows",
     "create_workflow",
+    "copy_workflow",
     "list_schedules",
     "get_schedule",
     "create_schedule",
@@ -151,6 +152,10 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             _require(bool(args.datasource or args.datasource_id), "create_workflow with SQL initial task requires --datasource or --datasource-id")
         if task_type == "SHELL":
             _require(bool(args.script), "create_workflow with SHELL initial task requires --script")
+    if args.action == "copy_workflow":
+        _require(bool(args.project_code), "copy_workflow requires --project-code")
+        _require(bool(args.workflow_code), "copy_workflow requires --workflow-code (source workflow)")
+        _require(bool(args.workflow_name), "copy_workflow requires --workflow-name (new workflow name)")
     if args.action == "get_instance":
         _require(bool(args.instance_id), "get_instance requires --instance-id")
     if args.action == "list_task_instances":
@@ -364,6 +369,9 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
         if args.resource_list_json is not None:
             extra_payload["resource_list"] = _load_json(args.resource_list_json, [])
             extra_payload["replace_resource_list"] = not args.merge_resource_list
+
+    if args.action == "copy_workflow":
+        extra_payload["release_workflow"] = args.release_workflow
 
     if args.action in {"create_schedule", "update_schedule", "online_schedule", "offline_schedule", "get_schedule", "schedule_blast_radius"}:
         extra_payload.update(
@@ -619,6 +627,14 @@ def main() -> None:
     parser.add_argument("--target-task-name-prefixes-json")
     parser.add_argument("--restore-original-state", action="store_const", const=True, default=None)
     parser.add_argument("--auto-offline", action="store_const", const=True, default=None)
+    parser.add_argument(
+        "--no-release-workflow",
+        dest="release_workflow",
+        action="store_const",
+        const=False,
+        default=True,
+        help="copy_workflow: do not release the new workflow ONLINE after creating it",
+    )
     args = parser.parse_args()
 
     payload = build_payload(args)

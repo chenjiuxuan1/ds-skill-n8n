@@ -1,6 +1,6 @@
 # Examples
 
-## 0. 定时告警安全调整
+## 1. 定时告警安全调整
 
 先精确查询菲律宾本地告警组：
 
@@ -51,7 +51,7 @@ python3 scripts/build_ds_webhook_payload.py \
 
 不要手工推测 `<ORIGINAL>` 值；应直接复制网关返回的整个 `rollback_payload`。恢复请求成功后仍需调用 `get_schedule` 再次确认。
 
-## 1. 查询中国工作流列表
+## 2. 查询中国工作流列表
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -64,7 +64,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --page-size 20
 ```
 
-## 2. 查询墨西哥工作流 DAG 结构
+## 3. 查询墨西哥工作流 DAG 结构
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -76,7 +76,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 174599383687393
 ```
 
-## 3. 触发中国工作流
+## 4. 触发中国工作流
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -88,7 +88,27 @@ python3 scripts/build_ds_webhook_payload.py \
   --custom-params-json '{"dt":"2026-06-10"}'
 ```
 
-## 4. 在空项目里创建一个空 workflow
+## 5. 复制工作流为触发式（按需）
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country ph \
+  --action copy_workflow \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 15843450427744 \
+  --workflow-code 15843450427744 \
+  --workflow-name "DWD_5M_TRIGGER"
+```
+
+说明：
+
+- `workflow-code` 是源工作流 code
+- `workflow-name` 是新副本名称，需在项目内唯一
+- 默认创建后立即上线（触发式工作流需 ONLINE 才能被 API 触发）；如需先离线可加 `--no-release-workflow`
+- 副本不创建任何定时：`trigger_style=true`、`schedule_created=false`
+
+## 6. 在空项目里创建一个空 workflow
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -101,7 +121,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --description "Created by Codex for DS scheduler skill testing"
 ```
 
-## 5. 追加 SQL 任务
+## 7. 追加 SQL 任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -118,7 +138,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --sql-type query
 ```
 
-## 6. 追加 SHELL 任务
+## 8. 追加 SHELL 任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -134,7 +154,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --script "echo hello"
 ```
 
-## 7. 查询实例详情
+## 9. 查询实例详情
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -146,7 +166,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --instance-id 1040772
 ```
 
-## 8. 查询某次实例里的任务明细
+## 10. 查询某次实例里的任务明细
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -160,7 +180,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --page-size 100
 ```
 
-## 9. 拉取任务运行日志
+## 11. 拉取任务运行日志
 
 按任务实例 ID 直接拉取：
 
@@ -213,7 +233,7 @@ python3 scripts/build_ds_webhook_payload.py \
 
 国家未配置已验证的官方执行类型时会返回 `UNSUPPORTED`。
 
-## 10. 修改已有 SQL 任务内容
+## 12. 修改已有 SQL 任务内容
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -228,7 +248,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --sql-type query
 ```
 
-## 11. 给任务添加自定义参数
+## 13. 给任务添加自定义参数
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -242,7 +262,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-local-params-json '[{"prop":"biz_date","direct":"IN","type":"VARCHAR","value":"${system.biz.date}"}]'
 ```
 
-## 12. 给任务填写资源列表
+## 14. 给任务填写资源列表
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -262,7 +282,7 @@ python3 scripts/build_ds_webhook_payload.py \
 --merge-resource-list
 ```
 
-## 13. 修改已有 SHELL 任务脚本
+## 15. 修改已有 SHELL 任务脚本
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -276,7 +296,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --script "bash /data/apps/ds/load_dim_account.sh ${biz_date}"
 ```
 
-## 14. 创建定时
+## 16. 创建定时
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -293,7 +313,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --worker-group default
 ```
 
-## 15. 上线 / 下线定时
+## 17. 上线 / 下线定时
 
 上线：
 
@@ -319,7 +339,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --workflow-code 158515019593728
 ```
 
-## 16. 查看资源中心目录
+## 18. 查看资源中心目录
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -334,7 +354,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --page-size 50
 ```
 
-## 17. 查看资源文件内容
+## 19. 查看资源文件内容
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -347,7 +367,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --limit 200
 ```
 
-## 18. 按 SQL 片段反查资源文件
+## 20. 按 SQL 片段反查资源文件
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -361,7 +381,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --max-files 300
 ```
 
-## 15. 精确下线单个任务
+## 21. 精确下线单个任务
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
@@ -374,7 +394,7 @@ python3 scripts/build_ds_webhook_payload.py \
   --task-name "ods_msgsvr_ivr_account"
 ```
 
-## 16. 下线任务前的安全检查建议
+## 22. 下线任务前的安全检查建议
 
 对于同步类工作流，在执行以下动作前：
 

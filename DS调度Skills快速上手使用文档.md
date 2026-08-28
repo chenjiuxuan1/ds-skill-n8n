@@ -39,6 +39,7 @@
 | `resolve_project` | 按 code 或唯一精确名称解析项目 |
 | `list_workflows` | 查工作流列表 |
 | `create_workflow` | 在项目下创建空 workflow |
+| `copy_workflow` | 复制工作流为触发式（按需）版本 |
 | `get_workflow` | 查某个工作流详情 |
 | `online_workflow` | 工作流上线 |
 | `offline_workflow` | 工作流下线 |
