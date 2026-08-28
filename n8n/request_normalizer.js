@@ -13,6 +13,7 @@ const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
   'resolve_project',
   'list_alert_groups',
+  'get_alert_instance',
   'list_projects',
   'list_workflows',
   'create_workflow',
