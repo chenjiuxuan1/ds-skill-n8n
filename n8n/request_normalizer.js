@@ -32,6 +32,7 @@ const ACTIONS = new Set([
   'get_instance',
   'list_task_instances',
   'get_task_log',
+  'get_auto_repair_log',
   'retry_instance',
   'stop_instance',
   'force_fail_instance',
@@ -56,7 +57,7 @@ const ACTIONS = new Set([
   'dump_workflow_graph',
 ]);
 
-const source = raw.source || 'codex-skill';
+const source = raw.source || 'api';
 const country = String(raw.country || '').trim().toLowerCase();
 const action = String(raw.action || '').trim();
 const ds_token = String(raw.ds_token || '').trim();
@@ -153,6 +154,7 @@ const payload = {
   max_results: inputPayload.max_results ?? 20,
   max_files: inputPayload.max_files ?? 200,
   content_limit: inputPayload.content_limit ?? 500000,
+  log_path: inputPayload.log_path || '',
   keep_task_names: Array.isArray(inputPayload.keep_task_names) ? inputPayload.keep_task_names : [],
   keep_task_codes: Array.isArray(inputPayload.keep_task_codes) ? inputPayload.keep_task_codes : [],
   target_task_name_prefixes: Array.isArray(inputPayload.target_task_name_prefixes)
@@ -206,24 +208,14 @@ if (action === 'create_workflow') {
   if (!payload.project_code) errors.push('create_workflow requires project_code');
   if (!payload.workflow_name) errors.push('create_workflow requires workflow_name');
 }
-if (['online_schedule', 'offline_schedule'].includes(action)) {
+if (['online_schedule', 'offline_schedule', 'schedule_blast_radius'].includes(action)) {
   if (!payload.project_code) errors.push(`${action} requires project_code`);
   if (!payload.workflow_code && !payload.schedule_id) {
     errors.push(`${action} requires workflow_code or schedule_id`);
   }
 }
-if (action === 'schedule_blast_radius') {
-  if (!payload.project_code && !payload.project_name) {
-    errors.push('schedule_blast_radius requires project_code or project_name');
-  }
-  if (!payload.workflow_code && !payload.schedule_id) {
-    errors.push('schedule_blast_radius requires workflow_code or schedule_id');
-  }
-}
 if (action === 'get_schedule') {
-  if (!payload.project_code && !payload.project_name) {
-    errors.push('get_schedule requires project_code or project_name');
-  }
+  if (!payload.project_code) errors.push('get_schedule requires project_code');
   if (!payload.workflow_code && !payload.workflow_name && !payload.schedule_id) {
     errors.push('get_schedule requires schedule_id or workflow_code or workflow_name');
   }
@@ -283,17 +275,13 @@ if (action === 'get_instance' && !payload.instance_id) {
   errors.push('get_instance requires instance_id');
 }
 if (action === 'list_task_instances') {
-  if (!payload.project_code && !payload.project_name) {
-    errors.push('list_task_instances requires project_code or project_name');
-  }
+  if (!payload.project_code) errors.push('list_task_instances requires project_code');
   if (!payload.process_instance_id && !payload.instance_id) {
     errors.push('list_task_instances requires process_instance_id or instance_id');
   }
 }
 if (action === 'get_task_log') {
-  if (!payload.project_code && !payload.project_name) {
-    errors.push('get_task_log requires project_code or project_name');
-  }
+  if (!payload.project_code) errors.push('get_task_log requires project_code');
   if (!payload.task_instance_id) {
     const hasInstance = Boolean(payload.process_instance_id || payload.instance_id);
     const hasTaskLocator = Boolean(payload.task_name || payload.task_code);
@@ -313,9 +301,7 @@ if (action === 'get_workflow' && !payload.workflow_code && !payload.workflow_nam
   errors.push('get_workflow requires workflow_code or workflow_name');
 }
 if (action === 'extract_task_runtime_config') {
-  if (!payload.project_code && !payload.project_name) {
-    errors.push('extract_task_runtime_config requires project_code or project_name');
-  }
+  if (!payload.project_code) errors.push('extract_task_runtime_config requires project_code');
   if (!payload.workflow_code) errors.push('extract_task_runtime_config requires workflow_code');
   if (!payload.task_name && !payload.task_code) {
     errors.push('extract_task_runtime_config requires task_name or task_code');
