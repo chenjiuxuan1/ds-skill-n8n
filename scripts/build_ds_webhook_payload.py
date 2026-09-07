@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict
 
 
@@ -75,6 +77,20 @@ ROLLBACK_PAYLOAD_FIELDS = {
     "release_state",
     "start_params",
 }
+
+
+def _load_token_from_config(config_path: str | None, country: str) -> str:
+    if not config_path:
+        return ""
+    path = Path(config_path).expanduser()
+    if not path.is_file():
+        raise SystemExit(f"token config not found: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    tokens = data.get("tokens", data) if isinstance(data, dict) else {}
+    token = tokens.get(country) if isinstance(tokens, dict) else ""
+    if isinstance(token, str) and token.startswith("${") and token.endswith("}"):
+        token = os.environ.get(token[2:-1], "")
+    return str(token or "").strip()
 
 
 def _load_json(raw: str | None, default: Any) -> Any:
@@ -530,7 +546,8 @@ def main() -> None:
     parser.add_argument("--webhook-url", required=True)
     parser.add_argument("--country", required=True)
     parser.add_argument("--action", required=True)
-    parser.add_argument("--ds-token", required=True)
+    parser.add_argument("--ds-token")
+    parser.add_argument("--token-config", help="JSON file containing country DS tokens; see config/ds-tokens.example.json")
     parser.add_argument("--request-id")
     parser.add_argument("--project-code")
     parser.add_argument("--project-name")
@@ -621,6 +638,14 @@ def main() -> None:
     parser.add_argument("--restore-original-state", action="store_const", const=True, default=None)
     parser.add_argument("--auto-offline", action="store_const", const=True, default=None)
     args = parser.parse_args()
+
+    if not args.ds_token:
+        args.ds_token = _load_token_from_config(args.token_config, args.country)
+    if not args.ds_token:
+        raise SystemExit(
+            "ds_token is required. Create your token in DolphinScheduler 安全中心 -> 令牌管理 -> 新建, "
+            "then pass --ds-token or --token-config config/ds-tokens.local.json"
+        )
 
     payload = build_payload(args)
     display_payload = deepcopy(payload)

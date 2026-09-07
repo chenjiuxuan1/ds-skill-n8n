@@ -113,6 +113,14 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `action`
 - `ds_token`
 
+## Token 配置与提醒
+
+- `ds_token` 必须来自用户自己的 DolphinScheduler 账号。提醒用户进入 `安全中心 -> 令牌管理 -> 新建` 创建 token。
+- 不要在 skill、n8n workflow 或 Git 仓库中写死真实 token。
+- 可提供 `config/ds-tokens.example.json` 给用户复制成本地私有配置，例如 `config/ds-tokens.local.json`。
+- 如果用户没有提供 `ds_token`，先提示用户补充 token 或本地 token 配置，再构造正式请求。
+- 生成脚本支持 `--ds-token` 直接传入，也支持 `--token-config config/ds-tokens.local.json` 按国家读取。
+
 常见补充：
 - `project_code`
 - `workflow_code`
