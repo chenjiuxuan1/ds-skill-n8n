@@ -13,9 +13,11 @@ const COUNTRIES = new Set(['cn', 'ine', 'mx', 'ph', 'pk', 'th']);
 const ACTIONS = new Set([
   'resolve_project',
   'list_alert_groups',
+  'get_alert_instance',
   'list_projects',
   'list_workflows',
   'create_workflow',
+  'copy_workflow',
   'list_schedules',
   'get_schedule',
   'create_schedule',
@@ -299,6 +301,17 @@ if (action === 'resolve_project' && !payload.project_code && !payload.project_na
 }
 if (action === 'get_workflow' && !payload.workflow_code && !payload.workflow_name) {
   errors.push('get_workflow requires workflow_code or workflow_name');
+}
+if (action === 'copy_workflow') {
+  if (!payload.project_code) {
+    errors.push('copy_workflow requires project_code');
+  }
+  if (!payload.workflow_code) {
+    errors.push('copy_workflow requires workflow_code (source workflow)');
+  }
+  if (!payload.workflow_name) {
+    errors.push('copy_workflow requires workflow_name (new workflow name)');
+  }
 }
 if (action === 'extract_task_runtime_config') {
   if (!payload.project_code) errors.push('extract_task_runtime_config requires project_code');

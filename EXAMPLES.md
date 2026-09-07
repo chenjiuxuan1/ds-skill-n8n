@@ -88,6 +88,26 @@ python3 scripts/build_ds_webhook_payload.py \
   --custom-params-json '{"dt":"2026-06-10"}'
 ```
 
+## 3.1 复制工作流为触发式（按需）
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country ph \
+  --action copy_workflow \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 15843450427744 \
+  --workflow-code 15843450427744 \
+  --workflow-name "DWD_5M_TRIGGER"
+```
+
+说明：
+
+- `workflow-code` 是源工作流 code
+- `workflow-name` 是新副本名称，需在项目内唯一
+- 默认创建后立即上线（触发式工作流需 ONLINE 才能被 API 触发）；如需先离线可加 `--no-release-workflow`
+- 副本不创建任何定时：`trigger_style=true`、`schedule_created=false`
+
 ## 4. 在空项目里创建一个空 workflow
 
 ```bash
