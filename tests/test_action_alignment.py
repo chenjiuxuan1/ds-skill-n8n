@@ -19,9 +19,9 @@ def python_action_set(path: Path):
 
 
 class ActionAlignmentTests(unittest.TestCase):
-    def test_builder_exposes_all_43_actions(self):
+    def test_builder_exposes_all_44_actions(self):
         actions = python_action_set(ROOT / "scripts/build_ds_webhook_payload.py")
-        self.assertEqual(43, len(actions))
+        self.assertEqual(44, len(actions))
         self.assertTrue({
             "resolve_project",
             "check_failed_instances",
@@ -31,6 +31,7 @@ class ActionAlignmentTests(unittest.TestCase):
             "force_fail_instance",
             "list_alert_groups",
             "batch_update_schedule_alerts",
+            "get_auto_repair_log",
         }.issubset(actions))
 
     def test_normalizer_exposes_same_actions(self):

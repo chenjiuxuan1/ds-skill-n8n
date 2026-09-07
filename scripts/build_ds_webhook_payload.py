@@ -34,6 +34,7 @@ ACTIONS = {
     "get_instance",
     "list_task_instances",
     "get_task_log",
+    "get_auto_repair_log",
     "retry_instance",
     "stop_instance",
     "force_fail_instance",
