@@ -17,7 +17,7 @@ ARTIFACTS = {
     ROOT / "n8n/ds-scheduler-router.latest.json": {
         "nodes": 24,
         "connections": 19,
-        "structural_hash": "3a15ece5416bab86ade3e3dc64b43ec57238e34ee9b57e1871311610184847f6",
+        "structural_hash": "141c143f1612b79d35fae584e128f97f830f2dd722433fc315a93bd7277e7f4c",
     },
 }
 

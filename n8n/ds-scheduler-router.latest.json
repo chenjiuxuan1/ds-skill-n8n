@@ -274,7 +274,7 @@
     {
       "parameters": {
         "authentication": "privateKey",
-        "command": "=ssh -p 36000 root@10.20.47.14 \"cd /root/ds-scheduler-gateway || exit 1; git remote remove gateway-github >/dev/null 2>&1 || true; git remote add gateway-github git@github.com:chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git clean -fd\""
+        "command": "=ssh -p 36000 root@10.20.47.14 \"cd /root/ds-scheduler-gateway || exit 1; git remote get-url gateway-github >/dev/null 2>&1 || git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git; git fetch --prune gateway-github main || exit 1; git checkout main >/dev/null 2>&1 || git checkout -b main || exit 1; git reset --hard FETCH_HEAD || exit 1; git branch --set-upstream-to=gateway-github/main main >/dev/null 2>&1 || true; git clean -fd; git rev-parse --short HEAD\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
