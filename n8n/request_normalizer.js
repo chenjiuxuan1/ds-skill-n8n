@@ -182,15 +182,6 @@ if (Object.prototype.hasOwnProperty.call(inputPayload, 'sql_type')
   && inputPayload.sql_type != null) {
   payload.sql_type = inputPayload.sql_type;
 }
-
-// Task-level retry settings. Copied verbatim (like dry_run) so a wrong-typed
-// value reaches the validator below instead of silently vanishing and leaving
-// the gateway to apply its default.
-for (const field of ['fail_retry_times', 'fail_retry_interval']) {
-  if (Object.prototype.hasOwnProperty.call(inputPayload, field)) {
-    payload[field] = inputPayload[field];
-  }
-}
 if (Object.prototype.hasOwnProperty.call(inputPayload, 'resource_list')) {
   payload.resource_list = Array.isArray(inputPayload.resource_list)
     ? inputPayload.resource_list
@@ -402,9 +393,14 @@ if (['update_task', 'update_sql_task', 'update_shell_task'].includes(action)) {
   if (action === 'update_shell_task' && !payload.script && !payload.task_params_patch.rawScript) {
     errors.push('update_shell_task requires script or task_params_patch.rawScript');
   }
+  // Task-level retry settings. Kept inside this block so the other 45 actions
+  // are provably untouched by them. A wrong-typed value is copied verbatim
+  // first (like dry_run) so it reaches the validator instead of silently
+  // vanishing and leaving the gateway to apply its default.
   for (const [field, max] of [['fail_retry_times', 1000], ['fail_retry_interval', 10080]]) {
     const raw = inputPayload[field];
     if (raw === undefined || raw === null || raw === '') continue;
+    payload[field] = raw;
     if (typeof raw === 'boolean'
       || (typeof raw !== 'number' && typeof raw !== 'string')
       || !/^-?\d+$/.test(String(raw).trim())) {
