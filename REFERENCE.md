@@ -86,6 +86,7 @@
 - `delete_task`
 - `dump_workflow_graph`
 - `list_datasources`
+- `list_environments`
 - `get_datasource`
 - `extract_task_runtime_config`
 - `list_resources`
@@ -869,7 +870,22 @@ SQL 任务附加可选：
 必填：
 - `project_code`（或 `project_name`）
 - `workflow_code`
-- `environment_code`
+- `environment_code` 或 `environment_name`（二选一）
+
+> **按名字切换**：DS 只认数字 `environmentCode`，而人只记得名字。传 `environment_name`
+> （例如 `ds_develop`）时，网关会实时查询环境列表并**要求精确且唯一匹配**，解析出的 code
+> 会回显在响应的 `environment_resolution` 里。名字不存在 → `ENVIRONMENT_NOT_FOUND`；
+> 重名 → `ENVIRONMENT_NAME_AMBIGUOUS`；两种情况都**不会写入**。
+>
+> 之所以不允许模糊匹配：DS 把 `environmentCode` 当不透明字符串存储、写入时不校验，
+> 猜错会静默把生产任务挪到错误环境，只在运行时才暴露。
+>
+> 想知道某名字对应的 code，先用只读动作 `list_environments` 查：
+
+```
+{"action":"list_environments","country":"pk","ds_token":"<TOKEN>",
+ "payload":{"search_val":"ds_develop"}}
+```
 
 可选：
 - `dry_run`（默认 `true`，只有布尔 `false` 才写入）
@@ -888,14 +904,17 @@ SQL 任务附加可选：
 失败码：
 - `GLOBAL_PARAMS_UNREADABLE`：全局参数读取不可信，拒绝写入
 - `GLOBAL_PARAMS_REQUIRED`：传了 `require_global_params=true` 且全局参数缺失
-- `ENVIRONMENT_CODE_REQUIRED` / `WORKFLOW_CODE_REQUIRED` / `INVALID_BOOLEAN_FIELD`
+- `ENVIRONMENT_REQUIRED`：`environment_code` 与 `environment_name` 都没传
+- `ENVIRONMENT_NOT_FOUND` / `ENVIRONMENT_NAME_AMBIGUOUS` / `ENVIRONMENT_LOOKUP_FAILED`
+- `WORKFLOW_CODE_REQUIRED` / `INVALID_BOOLEAN_FIELD`
 
 ### `batch_update_workflow_environment`
 
 必填：
 - `project_code`
 - `workflow_codes`（唯一非空字符串数组）
-- `environment_code`
+- `environment_code` 或 `environment_name`（二选一；名字只解析一次，结果回显在
+  `environment_resolution`，解析失败则在读取任何工作流之前就中止）
 
 可选：`dry_run`（默认 `true`）、`include_schedule`、`restore_original_state`、`auto_offline`、
 `require_global_params`、`rate_limit_ms`（默认 100，0–10000）。

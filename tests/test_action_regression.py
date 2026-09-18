@@ -1,6 +1,6 @@
 """Regression guard: the new features must not touch the other actions.
 
-The normalizer is a single shared script with a 48-action allowlist and a large
+The normalizer is a single shared script with a 49-action allowlist and a large
 payload allowlist. Adding task-level retry handling to it must be provably
 inert for every other action, and every action must keep returning the same
 output contract.
@@ -125,8 +125,8 @@ class AllActionRegressionTests(unittest.TestCase):
 
     # ---- the action surface is unchanged -----------------------------------
 
-    def test_the_action_surface_is_still_48(self):
-        self.assertEqual(48, len(self.actions))
+    def test_the_action_surface_is_still_49(self):
+        self.assertEqual(49, len(self.actions))
 
     def test_update_family_is_present_in_the_allowlist(self):
         for action in UPDATE_FAMILY:
@@ -155,7 +155,7 @@ class AllActionRegressionTests(unittest.TestCase):
 
     def test_retry_fields_do_not_change_any_other_action(self):
         others = [a for a in self.actions if a not in UPDATE_FAMILY]
-        self.assertEqual(45, len(others))
+        self.assertEqual(46, len(others))
         for action in others:
             plain, retry = self.get(action, "plain"), self.get(action, "retry")
             with self.subTest(action=action):

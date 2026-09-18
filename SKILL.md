@@ -55,6 +55,7 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `force_fail_instance`
   - `check_failed_instances`
   - `list_datasources`
+  - `list_environments`
   - `get_datasource`
   - `extract_task_runtime_config`
   - `list_resources`

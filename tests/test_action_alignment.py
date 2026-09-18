@@ -22,7 +22,7 @@ def python_action_set(path: Path):
 class ActionAlignmentTests(unittest.TestCase):
     def test_builder_exposes_the_full_action_set(self):
         actions = python_action_set(ROOT / "scripts/build_ds_webhook_payload.py")
-        self.assertEqual(48, len(actions))
+        self.assertEqual(49, len(actions))
         self.assertTrue({
             "resolve_project",
             "check_failed_instances",
