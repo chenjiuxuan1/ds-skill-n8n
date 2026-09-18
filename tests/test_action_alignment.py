@@ -1,4 +1,5 @@
 import ast
+import json
 import re
 import unittest
 from pathlib import Path
@@ -46,6 +47,35 @@ class ActionAlignmentTests(unittest.TestCase):
             python_action_set(ROOT / "scripts/build_ds_webhook_payload.py"),
             js_actions,
         )
+
+    def test_shell_handled_actions_are_declared_as_such(self):
+        """Some allowlisted actions never reach the gateway.
+
+        ``find_resource_usage`` and ``get_auto_repair_log`` are executed by the
+        remote shell block of each country node, so they are deliberately absent
+        from the gateway's ``SUPPORTED_ACTIONS``. Without this list it looks like
+        the two artifacts disagree; with it, the router must actually implement
+        the intercept.
+        """
+        shell_only = {"find_resource_usage", "get_auto_repair_log"}
+        actions = python_action_set(ROOT / "scripts/build_ds_webhook_payload.py")
+        self.assertTrue(shell_only.issubset(actions))
+
+        wf = json.loads((ROOT / "n8n/ds-scheduler-router.latest.json").read_text(encoding="utf-8"))
+        country_nodes = [n for n in wf["nodes"] if n["name"] in
+                         {"中国", "菲律宾", "印尼", "墨西哥", "泰国", "巴基斯坦"}]
+        self.assertEqual(6, len(country_nodes))
+        for node in country_nodes:
+            command = node["parameters"]["command"]
+            for action in shell_only:
+                with self.subTest(node=node["name"], action=action):
+                    self.assertIn(
+                        f'[ "$ACTION" = "{action}" ]',
+                        command,
+                        f"{node['name']} does not intercept {action}",
+                    )
+            # a trailing else branch must still forward everything else to the gateway
+            self.assertIn("ds_scheduler_entry.py", command)
 
 
 if __name__ == "__main__":

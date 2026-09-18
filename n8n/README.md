@@ -110,53 +110,67 @@ git pull internal main
 
 ## 当前支持动作
 
-- `list_projects`
-- `resolve_project`
-- `list_workflows`
-- `create_workflow`
-- `list_schedules`
-- `get_schedule`
-- `create_schedule`
-- `update_schedule`
-- `online_schedule`
-- `offline_schedule`
-- `schedule_blast_radius`
-- `get_workflow`
-- `online_workflow`
-- `offline_workflow`
-- `trigger_workflow`
-- `list_instances`
-- `get_instance`
-- `list_task_instances`
-- `get_task_log`
-- `retry_instance`
-- `stop_instance`
-- `force_fail_instance`
-- `check_failed_instances`
-- `list_datasources`
-- `get_datasource`
-- `extract_task_runtime_config`
-- `list_resources`
-- `view_resource_file`
-- `search_resource_sql`
-- `find_resource_usage`
-- `search_country_git_sql`
+共 **48** 个，按落地位置分两类。
+
+### 一、网关动作（46 个，由各国节点的 `else` 分支转给 `scripts/ds_scheduler_entry.py`）
+
+只读查询（22）：
+
+`resolve_project`、`list_projects`、`list_workflows`、`get_workflow`、`dump_workflow_graph`、
+`list_schedules`、`get_schedule`、`schedule_blast_radius`、`list_alert_groups`、`get_alert_instance`、
+`list_instances`、`get_instance`、`list_task_instances`、`get_task_log`、`check_failed_instances`、
+`list_datasources`、`get_datasource`、`extract_task_runtime_config`、`list_resources`、
+`view_resource_file`、`search_resource_sql`、`search_country_git_sql`
+
+写入（13）：
+
+`create_workflow`、`copy_workflow`、`append_task`、`append_sql_task`、`append_shell_task`、
+`update_task`、`update_sql_task`、`update_shell_task`、`create_schedule`、`update_schedule`、
+`batch_update_schedule_alerts`、`update_workflow_environment`、`batch_update_workflow_environment`
+
+删除白名单（3）：
+
+`delete_task`、`disable_task`、`disable_tasks_except`
+
+> 分级口径取自 `gateway/access.py`：读 22 + 写 13 + 删除 3 + 控制 8 = 46；
+> 另有 2 个跳板机本地动作，合计 48。这四个分级常量必须与值班平台的
+> `src/ds-scheduler-access.mjs` 保持一致。
+
+控制（8）：
+
+`online_workflow`、`offline_workflow`、`trigger_workflow`、`retry_instance`、`stop_instance`、
+`force_fail_instance`、`online_schedule`、`offline_schedule`
+
+### 二、跳板机本地动作（2 个，不经过网关）
+
+- `find_resource_usage` — 各国节点的远端 shell 直接执行（复用只读 DS 候选助手做 MySQL 连接发现，再查一次元数据）
+- `get_auto_repair_log` — 远端 shell 直接读 `/data` 下的日志文件（`tail -n 200`）
+
+这两个动作**在 normalizer 白名单里，却不在网关注册表里**，因为在 `else` 分支之前就被远端
+shell 用 `[ "$ACTION" = ... ]` 拦截了。`tests/test_action_alignment.py` 会校验六个国家节点
+都确实实现了这两个拦截，并保留把其余动作转发给网关的 `else` 分支。
+
+### 三、无自动化入口的代码更新链路
+
+`ds-scheduler-router` 与 `各国-DS失败自动重跑统一入口` 里都有 `X更新DS网关代码` /
+`X代码拉取` 这一类 SSH 节点，做的是：
+
+```bash
+cd /root/ds-scheduler-gateway
+git remote add gateway-github https://github.com/chenjiuxuan1/ds-scheduler-gateway.git
+git fetch --prune gateway-github main
+git reset --hard FETCH_HEAD
+```
+
+**这两条链路都是「孤立」的**：它们没有任何入边，webhook 触发不到，n8n 公共 API 也没有
+执行工作流的接口。所以网关代码更新只能在 n8n 界面里手工执行（右键 `中国代码拉取` →
+`Execute step`，会顺着连边依次跑完六国）。
+
+---
 
 最新可导入工作流为 `ds-scheduler-router.latest.json`。它严格基于用户提供的
 `ds-scheduler-router (2).json` 增量修改，保留 24 个节点、19 组连接、六国
 分流、代码拉取和审计链路，只在“解析并标准化请求”节点增加实例动作契约。
-- `append_task`
-- `append_sql_task`
-- `append_shell_task`
-- `update_task`
-- `update_sql_task`
-- `update_shell_task`
-- `update_workflow_environment`
-- `batch_update_workflow_environment`
-- `disable_task`
-- `disable_tasks_except`
-- `delete_task`
-- `dump_workflow_graph`
 
 ## 解析节点职责
 
