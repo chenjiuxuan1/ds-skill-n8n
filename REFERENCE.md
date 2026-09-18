@@ -662,6 +662,7 @@
 - `auto_offline`
 - `fail_retry_times`
 - `fail_retry_interval`
+- `require_global_params`
 
 失败重试设置（任务定义级字段，不在 `taskParams` 里）：
 - `fail_retry_times`：失败重试次数，整数 0–1000；`0` 表示不重试
@@ -672,6 +673,15 @@
   同时提供 `sql` / `script`（这是既有契约，未改动）
 - 响应会回显落到任务上的 `fail_retry_times` / `fail_retry_interval`，`change_summary.changed_fields`
   里出现对应字段名才代表真的改了
+
+`require_global_params`（默认 `true`）：工作流 `globalParams` 为空、而任务脚本又引用了
+`${dt}` / `${full}` / `${src}` 等变量时，网关会**拒绝**写入——这是防止结构修改丢失参数的护栏。
+改重试次数、超时这类**不可能碰到参数**的字段时，可以显式传 `false` 越过护栏；此时响应会带上
+`integrity_warning`（内容与默认拦截时一致），越权放行永远留痕，不会静默。
+
+> 巴基斯坦有 21 个工作流属于「`globalParams` 为空但脚本引用 `${dt}`」，且 `t_ds_workflow_definition_log`
+> 里从来没有过参数——不是被弄丢的，是一开始就这么建的。这类工作流只能用
+> `require_global_params=false` 改重试。
 
 ```bash
 python3 scripts/build_ds_webhook_payload.py \
