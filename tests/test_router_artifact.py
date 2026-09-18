@@ -17,7 +17,7 @@ ARTIFACTS = {
     ROOT / "n8n/ds-scheduler-router.latest.json": {
         "nodes": 24,
         "connections": 19,
-        "structural_hash": "ff372dccd6fa3fa5b05dabca4ae7f0707992adc431c0c254e60edeab4c2589c0",
+        "structural_hash": "3a15ece5416bab86ade3e3dc64b43ec57238e34ee9b57e1871311610184847f6",
     },
 }
 
@@ -62,6 +62,8 @@ class RouterArtifactTests(unittest.TestCase):
                     "force_fail_instance",
                     "list_alert_groups",
                     "batch_update_schedule_alerts",
+                    "update_workflow_environment",
+                    "batch_update_workflow_environment",
                 }.issubset(actions(expected_code)))
 
     def test_latest_router_audits_batch_alert_updates_as_risky(self):
@@ -74,6 +76,14 @@ class RouterArtifactTests(unittest.TestCase):
         code = audit_node["parameters"]["jsCode"]
         risk_body = re.search(r"const riskActions = new Set\(\[(.*?)\]\);", code, re.S).group(1)
         self.assertIn("batch_update_schedule_alerts", risk_body)
+        self.assertIn("update_workflow_environment", risk_body)
+        self.assertIn("batch_update_workflow_environment", risk_body)
+        # Environment switching is a definition rewrite, not a destructive op.
+        high_risk_body = re.search(
+            r"const highRiskActions = new Set\(\[(.*?)\]\);", code, re.S
+        ).group(1)
+        self.assertNotIn("update_workflow_environment", high_risk_body)
+        self.assertNotIn("batch_update_workflow_environment", high_risk_body)
 
 
 if __name__ == "__main__":

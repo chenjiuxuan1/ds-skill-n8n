@@ -428,3 +428,70 @@ python3 scripts/build_ds_webhook_payload.py \
 - `${full}`
 
 则不要继续修改工作流定义，先恢复历史版本参数。
+
+## 17. 切换工作流环境（只改 environmentCode，不动工作流定义）
+
+当工作流的 `globalParams` 已经为空、但任务脚本仍引用 `${dt}` 时，`append_task` / `update_task` /
+`delete_task` 之类的结构修改类动作会被网关拒绝。**切环境不需要重建定义**，所以走这两个专用动作。
+
+### 17.1 先 dry-run 预演（默认就是 dry-run）
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action update_workflow_environment \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --workflow-code 20515301105637 \
+  --environment-code 12813621425120
+```
+
+看返回：
+
+- `data.status = DRY_RUN_MATCHED`：有任务需要改，还没写
+- `data.changed_tasks`：哪些任务、从哪个环境码切到哪个
+- `data.global_params_preserved`：本次会保留的全局参数名
+- `data.warnings`：若含 `PRE_EXISTING_MISSING_GLOBAL_PARAMS`，说明该工作流**本来就**缺全局参数
+  （不是本次造成的），回写是逐字的，不会变得更糟
+
+### 17.2 正式切换
+
+在 payload 里显式加 `"dry_run": false`：
+
+```json
+{
+  "country": "mx",
+  "action": "update_workflow_environment",
+  "ds_token": "YOUR_DS_TOKEN",
+  "request_id": "env-switch-001",
+  "payload": {
+    "project_code": "13068695921632",
+    "workflow_code": "20515301105637",
+    "environment_code": "12813621425120",
+    "dry_run": false
+  }
+}
+```
+
+返回 `data.status = UPDATED` 且 `data.verification.verified = true` 表示写后回读校验通过。
+把 `data.rollback_payload` 原样再发一次 `update_workflow_environment` 即可回滚。
+
+### 17.3 批量切换
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action batch_update_workflow_environment \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --workflow-codes 20515301105637,20515301105638 \
+  --environment-code 12813621425120
+```
+
+同样默认 `dry_run`。注意：
+
+- 网关会先做**零写入预检**：任一工作流读取不可信（`GLOBAL_PARAMS_UNREADABLE`）则整批中止
+- 预检通过后才逐条串行切换，单条失败不掩盖其它结果
+- 定时（schedule）默认不跟着切；需要一起切请加 `"include_schedule": true`

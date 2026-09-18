@@ -75,6 +75,8 @@
 - `update_task`
 - `update_sql_task`
 - `update_shell_task`
+- `update_workflow_environment`
+- `batch_update_workflow_environment`
 - `disable_task`
 - `disable_tasks_except`
 - `delete_task`
@@ -829,6 +831,54 @@ SQL 任务附加可选：
 - n8n 和远端网关只使用调用者提供的 token
 - 不在 skill 中保存 token
 - 不自动放大权限
+
+## 环境切换（`update_workflow_environment` / `batch_update_workflow_environment`）
+
+用于切换 DS 环境（`environmentCode`）。与结构修改类动作不同，它**逐字回写线上工作流定义、只改
+`environmentCode`**，因此不受 `globalParams` 为空时的结构修改门禁影响，也不会丢全局参数。
+
+### `update_workflow_environment`
+
+必填：
+- `project_code`（或 `project_name`）
+- `workflow_code`
+- `environment_code`
+
+可选：
+- `dry_run`（默认 `true`，只有布尔 `false` 才写入）
+- `include_schedule`（默认 `false`，同时切换定时的 `environmentCode`）
+- `restore_original_state`（默认 `true`）
+- `auto_offline`（默认 `true`）
+- `require_global_params`（默认 `false`；`true` 时全局参数缺失直接阻断）
+
+响应关键字段：
+- `status`：`DRY_RUN_MATCHED` / `UPDATED` / `SKIPPED_ALREADY_MATCHED` /
+  `VERIFICATION_FAILED_ROLLED_BACK` / `FAILED_ROLLBACK_FAILED` / `FAILED_UNCHANGED`
+- `changed_tasks`、`global_params_preserved`、`warnings`、`integrity_warning`
+- `verification`、`rollback`
+- `rollback_payload`：可直接作为下一次 `update_workflow_environment` 的 payload 传回
+
+失败码：
+- `GLOBAL_PARAMS_UNREADABLE`：全局参数读取不可信，拒绝写入
+- `GLOBAL_PARAMS_REQUIRED`：传了 `require_global_params=true` 且全局参数缺失
+- `ENVIRONMENT_CODE_REQUIRED` / `WORKFLOW_CODE_REQUIRED` / `INVALID_BOOLEAN_FIELD`
+
+### `batch_update_workflow_environment`
+
+必填：
+- `project_code`
+- `workflow_codes`（唯一非空字符串数组）
+- `environment_code`
+
+可选：`dry_run`（默认 `true`）、`include_schedule`、`restore_original_state`、`auto_offline`、
+`require_global_params`、`rate_limit_ms`（默认 100，0–10000）。
+
+行为：
+1. **零写入预检**：逐个读取并校验全部工作流，任一不可信则整批中止（`BATCH_PREFLIGHT_FAILED`），不写任何东西
+2. 预检通过后逐条串行执行，单条失败不掩盖其它结果
+
+响应：`total`、`summary`（`total / matched / updated / skipped / failed / verification_failed /
+rolled_back / rollback_failed`）、`results`。
 
 ## 当前不覆盖
 

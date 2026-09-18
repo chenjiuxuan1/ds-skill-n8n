@@ -53,6 +53,8 @@ const ACTIONS = new Set([
   'update_task',
   'update_sql_task',
   'update_shell_task',
+  'update_workflow_environment',
+  'batch_update_workflow_environment',
   'disable_tasks_except',
   'disable_task',
   'delete_task',
@@ -70,6 +72,9 @@ const payload = {
   project_code: inputPayload.project_code || '',
   project_name: inputPayload.project_name || '',
   project_names: Array.isArray(inputPayload.project_names) ? inputPayload.project_names : [],
+  workflow_codes: Array.isArray(inputPayload.workflow_codes)
+    ? inputPayload.workflow_codes
+    : (inputPayload.workflow_codes ? [inputPayload.workflow_codes] : []),
   workflow_code: inputPayload.workflow_code || '',
   workflow_name: inputPayload.workflow_name || '',
   description: inputPayload.description || '',
@@ -100,6 +105,14 @@ const payload = {
     ? inputPayload.start_params
     : (inputPayload.start_params || ''),
   dry_run: inputPayload.dry_run,
+  // Copied verbatim (never silently dropped) so the per-action validators
+  // below can reject a non-boolean instead of the flag vanishing into a
+  // default. An absent key still serializes away and falls back to the
+  // gateway default.
+  restore_original_state: inputPayload.restore_original_state,
+  auto_offline: inputPayload.auto_offline,
+  include_schedule: inputPayload.include_schedule,
+  require_global_params: inputPayload.require_global_params,
   retry_attempts: inputPayload.retry_attempts ?? 2,
   retry_delay_ms: inputPayload.retry_delay_ms ?? 250,
   rate_limit_ms: inputPayload.rate_limit_ms ?? 100,
@@ -164,12 +177,6 @@ const payload = {
     : [],
 };
 
-if (typeof inputPayload.restore_original_state === 'boolean') {
-  payload.restore_original_state = inputPayload.restore_original_state;
-}
-if (typeof inputPayload.auto_offline === 'boolean') {
-  payload.auto_offline = inputPayload.auto_offline;
-}
 if (Object.prototype.hasOwnProperty.call(inputPayload, 'sql_type')
   && inputPayload.sql_type !== ''
   && inputPayload.sql_type != null) {
@@ -409,6 +416,61 @@ if (action === 'disable_task') {
   if (!payload.workflow_code) errors.push('disable_task requires workflow_code');
   if (!payload.task_name && !payload.task_code) {
     errors.push('disable_task requires task_name or task_code');
+  }
+}
+
+if (action === 'update_workflow_environment') {
+  if (!payload.project_code) errors.push('update_workflow_environment requires project_code');
+  if (!payload.workflow_code) errors.push('update_workflow_environment requires workflow_code');
+  payload.environment_code = String(payload.environment_code || '').trim();
+  if (!payload.environment_code) errors.push('update_workflow_environment requires environment_code');
+  if (typeof payload.dry_run === 'undefined') payload.dry_run = true;
+  if (typeof payload.dry_run !== 'boolean') errors.push('dry_run must be a boolean');
+  if (typeof payload.include_schedule !== 'undefined' && typeof payload.include_schedule !== 'boolean') {
+    errors.push('include_schedule must be a boolean');
+  }
+  if (typeof payload.require_global_params !== 'undefined' && typeof payload.require_global_params !== 'boolean') {
+    errors.push('require_global_params must be a boolean');
+  }
+  if (typeof payload.restore_original_state !== 'undefined' && typeof payload.restore_original_state !== 'boolean') {
+    errors.push('restore_original_state must be a boolean');
+  }
+  if (typeof payload.auto_offline !== 'undefined' && typeof payload.auto_offline !== 'boolean') {
+    errors.push('auto_offline must be a boolean');
+  }
+}
+
+if (action === 'batch_update_workflow_environment') {
+  if (!payload.project_code) errors.push('batch_update_workflow_environment requires project_code');
+  if (!payload.workflow_codes.length) {
+    errors.push('batch_update_workflow_environment requires workflow_codes');
+  } else if (payload.workflow_codes.some((value) => typeof value !== 'string' || !value.trim())
+    || new Set(payload.workflow_codes.map((value) => value.trim())).size !== payload.workflow_codes.length) {
+    errors.push('workflow_codes must contain unique non-empty strings');
+  } else {
+    payload.workflow_codes = payload.workflow_codes.map((value) => value.trim());
+  }
+  payload.environment_code = String(payload.environment_code || '').trim();
+  if (!payload.environment_code) errors.push('batch_update_workflow_environment requires environment_code');
+  if (typeof payload.dry_run === 'undefined') payload.dry_run = true;
+  if (typeof payload.dry_run !== 'boolean') errors.push('dry_run must be a boolean');
+  if (typeof payload.include_schedule !== 'undefined' && typeof payload.include_schedule !== 'boolean') {
+    errors.push('include_schedule must be a boolean');
+  }
+  if (typeof payload.require_global_params !== 'undefined' && typeof payload.require_global_params !== 'boolean') {
+    errors.push('require_global_params must be a boolean');
+  }
+  if (typeof payload.restore_original_state !== 'undefined' && typeof payload.restore_original_state !== 'boolean') {
+    errors.push('restore_original_state must be a boolean');
+  }
+  if (typeof payload.auto_offline !== 'undefined' && typeof payload.auto_offline !== 'boolean') {
+    errors.push('auto_offline must be a boolean');
+  }
+  if (typeof payload.rate_limit_ms !== 'number'
+    || !Number.isInteger(payload.rate_limit_ms)
+    || payload.rate_limit_ms < 0
+    || payload.rate_limit_ms > 10000) {
+    errors.push('rate_limit_ms must be an integer between 0 and 10000');
   }
 }
 

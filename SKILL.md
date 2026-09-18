@@ -69,6 +69,8 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
   - `update_task`
   - `update_sql_task`
   - `update_shell_task`
+  - `update_workflow_environment`
+  - `batch_update_workflow_environment`
   - `disable_task`
   - `disable_tasks_except`
   - `delete_task`
@@ -322,6 +324,13 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `delete_task`
 - `disable_task`
 - `disable_tasks_except`
+
+`update_workflow_environment` / `batch_update_workflow_environment` **不在**上面这份名单里。它们虽然也会
+重新提交整个 workflow definition，但是**逐字回写线上定义、只改 `environmentCode`**，不会用 payload
+重建 `globalParams`，因此上面这道门禁对它们不适用。这是「只切环境、不动定义」的专用路径。
+
+注意：它们仍然有自己的防丢参数保证——`globalParams` 读取不可信（值不是合法 JSON，或 `globalParams`
+与 `globalParamList` 不一致）时返回 `GLOBAL_PARAMS_UNREADABLE` 并拒绝写入；写后回读校验不一致会自动回滚。
 
 对这些动作，必须先检查工作流级变量是否完整，尤其是 DS 3.4 中常见的同步工作流变量：
 

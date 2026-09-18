@@ -49,6 +49,8 @@ ACTIONS = {
     "update_task",
     "update_sql_task",
     "update_shell_task",
+    "update_workflow_environment",
+    "batch_update_workflow_environment",
     "disable_task",
     "disable_tasks_except",
     "delete_task",
@@ -433,6 +435,32 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             }
         )
 
+    if args.action in {"update_workflow_environment", "batch_update_workflow_environment"}:
+        extra_payload["environment_code"] = str(args.environment_code or "").strip()
+        extra_payload["dry_run"] = True if args.dry_run is None else args.dry_run
+        if args.include_schedule is not None:
+            extra_payload["include_schedule"] = args.include_schedule
+        if args.require_global_params is not None:
+            extra_payload["require_global_params"] = args.require_global_params
+        if args.restore_original_state is not None:
+            extra_payload["restore_original_state"] = args.restore_original_state
+        if args.auto_offline is not None:
+            extra_payload["auto_offline"] = args.auto_offline
+        if args.action == "batch_update_workflow_environment":
+            if args.workflow_codes_json:
+                extra_payload["workflow_codes"] = [
+                    str(value).strip()
+                    for value in _load_json(args.workflow_codes_json, [])
+                    if str(value).strip()
+                ]
+            else:
+                extra_payload["workflow_codes"] = [
+                    value.strip()
+                    for value in str(args.workflow_codes or "").split(",")
+                    if value.strip()
+                ]
+            extra_payload["rate_limit_ms"] = args.rate_limit_ms
+
     if args.action in {"append_task", "append_sql_task", "append_shell_task"}:
         extra_payload.update(
             {
@@ -563,6 +591,14 @@ def main() -> None:
     parser.add_argument("--project-names-json")
     parser.add_argument("--rollback-payload-json")
     parser.add_argument("--workflow-code")
+    parser.add_argument(
+        "--workflow-codes",
+        help="batch_update_workflow_environment: comma-separated workflow codes",
+    )
+    parser.add_argument(
+        "--workflow-codes-json",
+        help="batch_update_workflow_environment: JSON array of workflow codes",
+    )
     parser.add_argument("--workflow-name")
     parser.add_argument("--description")
     parser.add_argument("--instance-id")
@@ -646,6 +682,20 @@ def main() -> None:
     parser.add_argument("--target-task-name-prefixes-json")
     parser.add_argument("--restore-original-state", action="store_const", const=True, default=None)
     parser.add_argument("--auto-offline", action="store_const", const=True, default=None)
+    parser.add_argument(
+        "--include-schedule",
+        action="store_const",
+        const=True,
+        default=None,
+        help="update_workflow_environment: also switch the schedule environmentCode",
+    )
+    parser.add_argument(
+        "--require-global-params",
+        action="store_const",
+        const=True,
+        default=None,
+        help="update_workflow_environment: block when workflow global params are missing",
+    )
     parser.add_argument(
         "--no-release-workflow",
         dest="release_workflow",

@@ -1,5 +1,19 @@
 # n8n DS Scheduler
 
+## 环境切换动作
+
+请求 normalizer 已加入 `update_workflow_environment` 与 `batch_update_workflow_environment`，用于批量切换
+DS 环境（`environmentCode`）。这两个动作走的是「逐字回写线上工作流定义、只改 environmentCode」的路径，
+因此不受结构修改类动作的 `globalParams` 门禁影响。
+
+- `environment_code` 必填，normalizer 会先 `trim` 再校验非空。
+- `dry_run` 默认 `true`；只有布尔值 `false` 才进入正式切换。
+- `batch_update_workflow_environment` 的 `workflow_codes` 必须是唯一非空字符串数组；标量会被包成单元素数组。
+- `include_schedule` / `require_global_params` 只有显式布尔值才会透传，缺省时由网关使用各自的默认值。
+- `rate_limit_ms` 必须在 0–10000 之间（默认 100）。
+- 网关侧 `batch_update_workflow_environment` 会先做零写入预检，任一工作流读取不可信则整批中止。
+- 审计节点 `构造审计写入SQL` 已把这两个动作登记为 medium 风险。
+
 ## 定时告警动作
 
 请求 normalizer 已加入 `list_alert_groups` 与 `batch_update_schedule_alerts`，并允许 `update_schedule` 在不传 cron 的情况下只更新告警字段。
@@ -137,6 +151,8 @@ git pull internal main
 - `update_task`
 - `update_sql_task`
 - `update_shell_task`
+- `update_workflow_environment`
+- `batch_update_workflow_environment`
 - `disable_task`
 - `disable_tasks_except`
 - `delete_task`

@@ -59,6 +59,8 @@
 | `update_task` | 通用修改已有任务 |
 | `update_sql_task` | 修改已有 SQL 任务内容 |
 | `update_shell_task` | 修改已有 SHELL 任务脚本内容 |
+| `update_workflow_environment` | 只改环境编码切换环境（逐字保留原工作流定义，默认 dry-run） |
+| `batch_update_workflow_environment` | 批量切换环境（零写入预检通过后再逐条执行，默认 dry-run） |
 | `disable_task` | 下线已有任务但不删除节点 |
 | `disable_tasks_except` | 保留白名单，其余任务批量下线 |
 | `delete_task` | 删除已有任务 |
