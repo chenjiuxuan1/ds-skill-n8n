@@ -182,6 +182,15 @@ if (Object.prototype.hasOwnProperty.call(inputPayload, 'sql_type')
   && inputPayload.sql_type != null) {
   payload.sql_type = inputPayload.sql_type;
 }
+
+// Task-level retry settings. Copied verbatim (like dry_run) so a wrong-typed
+// value reaches the validator below instead of silently vanishing and leaving
+// the gateway to apply its default.
+for (const field of ['fail_retry_times', 'fail_retry_interval']) {
+  if (Object.prototype.hasOwnProperty.call(inputPayload, field)) {
+    payload[field] = inputPayload[field];
+  }
+}
 if (Object.prototype.hasOwnProperty.call(inputPayload, 'resource_list')) {
   payload.resource_list = Array.isArray(inputPayload.resource_list)
     ? inputPayload.resource_list
@@ -392,6 +401,23 @@ if (['update_task', 'update_sql_task', 'update_shell_task'].includes(action)) {
   }
   if (action === 'update_shell_task' && !payload.script && !payload.task_params_patch.rawScript) {
     errors.push('update_shell_task requires script or task_params_patch.rawScript');
+  }
+  for (const [field, max] of [['fail_retry_times', 1000], ['fail_retry_interval', 10080]]) {
+    const raw = inputPayload[field];
+    if (raw === undefined || raw === null || raw === '') continue;
+    if (typeof raw === 'boolean'
+      || (typeof raw !== 'number' && typeof raw !== 'string')
+      || !/^-?\d+$/.test(String(raw).trim())) {
+      errors.push(`${field} must be an integer`);
+      continue;
+    }
+    const value = Number(String(raw).trim());
+    if (value < 0 || value > max) {
+      errors.push(`${field} must be between 0 and ${max}`);
+      continue;
+    }
+    // Validated: emit a real number so the payload carries a typed value.
+    payload[field] = value;
   }
 }
 

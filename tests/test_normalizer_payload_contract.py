@@ -58,6 +58,7 @@ def request(action, payload):
 
 SINGLE = {"project_code": "1", "workflow_code": "2", "environment_code": "123"}
 BATCH = {"project_code": "1", "workflow_codes": ["2", "3"], "environment_code": "123"}
+TASK = {"project_code": "1", "workflow_code": "2", "task_name": "t1"}
 
 
 @unittest.skipUnless(NODE, "node is required to exercise the n8n normalizer")
@@ -88,6 +89,21 @@ class NormalizerFlagContractTests(unittest.TestCase):
             "ok_batch_scalar": request(
                 "batch_update_workflow_environment",
                 {"project_code": "1", "workflow_codes": "2", "environment_code": "123"},
+            ),
+            # ---- task retry settings ----
+            "ok_retry_times": request("update_task", {**TASK, "fail_retry_times": 3}),
+            "ok_retry_both": request(
+                "update_task", {**TASK, "fail_retry_times": 3, "fail_retry_interval": 5}
+            ),
+            "ok_retry_zero": request("update_task", {**TASK, "fail_retry_times": 0}),
+            "ok_retry_numeric_string": request("update_task", {**TASK, "fail_retry_times": "4"}),
+            "ok_retry_absent": request("update_task", dict(TASK)),
+            "bad_retry_string": request("update_task", {**TASK, "fail_retry_times": "abc"}),
+            "bad_retry_bool": request("update_task", {**TASK, "fail_retry_times": True}),
+            "bad_retry_negative": request("update_task", {**TASK, "fail_retry_times": -1}),
+            "bad_retry_float": request("update_task", {**TASK, "fail_retry_times": 1.5}),
+            "bad_retry_too_big": request(
+                "update_task", {**TASK, "fail_retry_interval": 99999}
             ),
             # ---- rejected: a wrong-typed flag must not be silently dropped ----
             "bad_dry_run": request(
@@ -151,6 +167,11 @@ class NormalizerFlagContractTests(unittest.TestCase):
             "ok_single_all_flags",
             "ok_batch",
             "ok_batch_scalar",
+            "ok_retry_times",
+            "ok_retry_both",
+            "ok_retry_zero",
+            "ok_retry_numeric_string",
+            "ok_retry_absent",
         ):
             with self.subTest(name=name):
                 self.assertTrue(self.results[name]["valid"], self.results[name]["errors"])
@@ -195,6 +216,35 @@ class NormalizerFlagContractTests(unittest.TestCase):
     def test_batch_rejects_wrong_typed_flags(self):
         self.assertRejected("batch_bad_include_schedule", "include_schedule must be a boolean")
         self.assertRejected("batch_bad_auto_offline", "auto_offline must be a boolean")
+
+    def test_task_retry_values_survive_into_the_payload(self):
+        self.assertEqual(3, self.decoded("ok_retry_times")["fail_retry_times"])
+        both = self.decoded("ok_retry_both")
+        self.assertEqual(3, both["fail_retry_times"])
+        self.assertEqual(5, both["fail_retry_interval"])
+        self.assertEqual(4, self.decoded("ok_retry_numeric_string")["fail_retry_times"])
+
+    def test_zero_retries_is_kept_not_treated_as_absent(self):
+        """0 clears retries; it must not be collapsed into 'field missing'."""
+        payload = self.decoded("ok_retry_zero")
+        self.assertIn("fail_retry_times", payload)
+        self.assertEqual(0, payload["fail_retry_times"])
+
+    def test_absent_retry_settings_serialize_away(self):
+        payload = self.decoded("ok_retry_absent")
+        self.assertNotIn("fail_retry_times", payload)
+        self.assertNotIn("fail_retry_interval", payload)
+
+    def test_wrong_typed_retry_settings_are_rejected_not_dropped(self):
+        self.assertRejected("bad_retry_string", "fail_retry_times must be an integer")
+        self.assertRejected("bad_retry_bool", "fail_retry_times must be an integer")
+        self.assertRejected("bad_retry_float", "fail_retry_times must be an integer")
+        self.assertRejected(
+            "bad_retry_negative", "fail_retry_times must be between 0 and 1000"
+        )
+        self.assertRejected(
+            "bad_retry_too_big", "fail_retry_interval must be between 0 and 10080"
+        )
 
 
 if __name__ == "__main__":

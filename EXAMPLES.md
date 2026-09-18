@@ -495,3 +495,53 @@ python3 scripts/build_ds_webhook_payload.py \
 - 网关会先做**零写入预检**：任一工作流读取不可信（`GLOBAL_PARAMS_UNREADABLE`）则整批中止
 - 预检通过后才逐条串行切换，单条失败不掩盖其它结果
 - 定时（schedule）默认不跟着切；需要一起切请加 `"include_schedule": true`
+
+## 18. 修改任务的重试次数
+
+DS 的任务定义级重试字段是 `failRetryTimes`（失败重试次数）和 `failRetryInterval`（重试间隔，**单位分钟**），
+它们是 `taskType` / `timeout` 的同级字段，**不在 `taskParams` 里**。
+
+只改重试、不改脚本时用 `update_task`（`update_sql_task` / `update_shell_task` 仍要求同时给 `sql` / `script`）：
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "https://sql-cn.kuainiujinke.com/webhook/ds-scheduler" \
+  --country mx \
+  --action update_task \
+  --ds-token "YOUR_DS_TOKEN" \
+  --project-code 13068695921632 \
+  --workflow-code 174599383687393 \
+  --task-name "dwd_okr_dashboard_wide_app" \
+  --fail-retry-times 3 \
+  --fail-retry-interval 5
+```
+
+也可以用 `--task-code` 代替 `--task-name`。
+
+清空重试（`0` 是有效值，不是"不修改"）：
+
+```bash
+  --fail-retry-times 0
+```
+
+取值约束：
+
+- `--fail-retry-times`：0–1000
+- `--fail-retry-interval`：0–10080（7 天），单位分钟
+- 不传即保持原值不变；传 `true`/`abc`/`1.5` 这类值会被 n8n 层和网关层各拒一次
+
+回执里核对两处：
+
+```json
+{
+  "fail_retry_times": 3,
+  "fail_retry_interval": 5,
+  "change_summary": {"changed_fields": ["fail_retry_times", "fail_retry_interval"]}
+}
+```
+
+`changed_fields` 里出现字段名才代表这次真的写进去了；如果什么都没有，返回的是
+`nothing to update`（说明值和线上现状一致）。
+
+> 注意：`append_task` 的重试次数继承自 `template_task_name` 指定的模板任务，
+> 不能用这两个参数覆盖。需要的话先 append，再对目标任务跑一次 `update_task`。

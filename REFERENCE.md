@@ -655,6 +655,29 @@
 - `tenant_code`
 - `restore_original_state`
 - `auto_offline`
+- `fail_retry_times`
+- `fail_retry_interval`
+
+失败重试设置（任务定义级字段，不在 `taskParams` 里）：
+- `fail_retry_times`：失败重试次数，整数 0–1000；`0` 表示不重试
+- `fail_retry_interval`：重试间隔，**单位分钟**，整数 0–10080（7 天）
+- 两者都兼容 DS 原生的驼峰写法 `failRetryTimes` / `failRetryInterval`
+- 数字字符串（如 `"3"`）会被接受并归一化成数字
+- 只改重试、不改脚本时用 `update_task`：`update_sql_task` / `update_shell_task` 仍要求
+  同时提供 `sql` / `script`（这是既有契约，未改动）
+- 响应会回显落到任务上的 `fail_retry_times` / `fail_retry_interval`，`change_summary.changed_fields`
+  里出现对应字段名才代表真的改了
+
+```bash
+python3 scripts/build_ds_webhook_payload.py \
+  --webhook-url "$WEBHOOK" --country cn --action update_task \
+  --ds-token "$DS_TOKEN" \
+  --project-code 158514956085248 --workflow-code 174599383687393 --task-name sql_task_1 \
+  --fail-retry-times 3 --fail-retry-interval 5
+```
+
+> `append_task` 的重试次数目前**继承自模板任务**（`template_task_name`），不能用这两个参数覆盖；
+> 需要的话先 append 再 `update_task`。
 
 SQL 任务附加可选：
 - `title`

@@ -14,6 +14,19 @@ DS 环境（`environmentCode`）。这两个动作走的是「逐字回写线上
 - 网关侧 `batch_update_workflow_environment` 会先做零写入预检，任一工作流读取不可信则整批中止。
 - 审计节点 `构造审计写入SQL` 已把这两个动作登记为 medium 风险。
 
+## 任务失败重试设置
+
+`update_task` / `update_sql_task` / `update_shell_task` 支持 `fail_retry_times`（0–1000）与
+`fail_retry_interval`（**单位分钟**，0–10080），对应 DS 任务定义级的 `failRetryTimes` /
+`failRetryInterval`——它们是 `taskType` / `timeout` 的同级字段，**不在 `taskParams` 里**。
+
+- normalizer 对这两个字段是**逐字复制**（与 `dry_run` 同一处理方式），因此类型错误的值会走到校验器
+  并被报错，而不是被静默丢弃、让网关去套默认值。
+- 通过校验的值会被归一化成**数字**再写入 `payload`；`0` 会被保留，不会退化成"未提供"。
+- 越界与类型错误都在 normalizer 报出，网关侧还会再校验一次（两层防护）。
+- 只改重试时用 `update_task`：`update_sql_task` / `update_shell_task` 的既有契约仍要求同时提供
+  `sql` / `script`。
+
 ## 定时告警动作
 
 请求 normalizer 已加入 `list_alert_groups` 与 `batch_update_schedule_alerts`，并允许 `update_schedule` 在不传 cron 的情况下只更新告警字段。

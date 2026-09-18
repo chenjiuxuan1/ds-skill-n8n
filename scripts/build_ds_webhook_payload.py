@@ -309,6 +309,12 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
                 bool(args.script or args.task_params_patch_json),
                 "update_shell_task requires --script or --task-params-patch-json",
             )
+        for flag, value, ceiling in (
+            ("--fail-retry-times", args.fail_retry_times, 1000),
+            ("--fail-retry-interval", args.fail_retry_interval, 10080),
+        ):
+            if value is not None:
+                _require(0 <= value <= ceiling, f"{flag} must be between 0 and {ceiling}")
     if args.action == "disable_tasks_except":
         _require(bool(args.project_code), "disable_tasks_except requires --project-code")
         _require(bool(args.workflow_code), "disable_tasks_except requires --workflow-code")
@@ -532,6 +538,12 @@ def build_payload(args: argparse.Namespace) -> Dict[str, Any]:
             extra_payload["restore_original_state"] = args.restore_original_state
         if args.auto_offline is not None:
             extra_payload["auto_offline"] = args.auto_offline
+        # Task-level retry settings. ``None`` means "leave unchanged", so 0 is a
+        # real value here and must still be emitted.
+        if args.fail_retry_times is not None:
+            extra_payload["fail_retry_times"] = args.fail_retry_times
+        if args.fail_retry_interval is not None:
+            extra_payload["fail_retry_interval"] = args.fail_retry_interval
 
     if args.action in {"disable_task", "delete_task"}:
         extra_payload.update(
@@ -615,6 +627,16 @@ def main() -> None:
     parser.add_argument("--task-type")
     parser.add_argument("--task-name")
     parser.add_argument("--task-description")
+    parser.add_argument(
+        "--fail-retry-times",
+        type=int,
+        help="update_task: DolphinScheduler failRetryTimes (failure retry count, 0-1000)",
+    )
+    parser.add_argument(
+        "--fail-retry-interval",
+        type=int,
+        help="update_task: DolphinScheduler failRetryInterval in MINUTES (0-10080)",
+    )
     parser.add_argument("--template-task-name")
     parser.add_argument("--sql")
     parser.add_argument("--script")

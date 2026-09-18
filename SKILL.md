@@ -302,6 +302,12 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 - `search_resource_sql` 用于按 SQL 片段在资源中心文本文件里反查命中文件
 - SHELL 任务当前依赖工作流中已有一个 `SHELL` 模板任务可供克隆
 - `create_workflow` 默认会先创建一个 bootstrap shell 节点，确保后续 `append_shell_task` / `append_sql_task` / `append_task` 能继续工作
+- 失败重试次数/间隔由 `update_task` 的 `fail_retry_times`（0–1000）和 `fail_retry_interval`
+  （**单位分钟**，0–10080）修改，对应 DS 任务定义级的 `failRetryTimes` / `failRetryInterval`
+  （与 `taskType` / `timeout` 同级，不在 `taskParams` 里）
+  - **只改重试时用 `update_task`**；`update_sql_task` / `update_shell_task` 仍要求同时给 `sql` / `script`
+  - `0` 是有效值（不重试），不传才是"保持原值"
+  - `append_task` 的重试次数继承自 `template_task_name` 模板，不能用这两个参数覆盖
 
 ## 已验证使用建议
 
