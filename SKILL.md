@@ -118,10 +118,34 @@ description: Use when the user wants Codex to inspect or operate DolphinSchedule
 ## Token 配置与提醒
 
 - `ds_token` 必须来自用户自己的 DolphinScheduler 账号。提醒用户进入 `安全中心 -> 令牌管理 -> 新建` 创建 token。
+- **令牌按国家实例独立存储，互不相通。** 某一国创建的令牌在其它国家无效。同一个用户在多国操作需要各自的令牌。
 - 不要在 skill、n8n workflow 或 Git 仓库中写死真实 token。
-- 可提供 `config/ds-tokens.example.json` 给用户复制成本地私有配置，例如 `config/ds-tokens.local.json`。
+- 可提供 `config/ds-tokens.example.json` 给用户复制成本地私有配置，例如 `config/ds-tokens.local.json`（已在 `.gitignore` 中，不会被提交）。
+- 令牌也常放在约定路径 `~/.config/codex-secrets/<国家>-dolphinscheduler-token`，或通过环境变量 `DS_TOKEN_<国家大写>` 提供。
 - 如果用户没有提供 `ds_token`，先提示用户补充 token 或本地 token 配置，再构造正式请求。
 - 生成脚本支持 `--ds-token` 直接传入，也支持 `--token-config config/ds-tokens.local.json` 按国家读取。
+
+## 开工前检查（重要）
+
+**第一次在某国操作，或用户报「查不到 / 报错 / 401」时，先跑 doctor，不要先怀疑网关、路由或请求格式：**
+
+```bash
+python3 scripts/ds_doctor.py --country <国家>
+```
+
+它依次确认：令牌能否解析 → 令牌格式是否完好（换行 / 截断）→ 线上 webhook 是否接受该令牌，并在失败时给出下一步。
+
+**遇到 401 时的正确判断顺序**（不要跳过 doctor 直接改代码或查路由）：
+
+1. 令牌不是这个国家的 —— DS 令牌按实例存储，跨境使用必然 401；
+2. 本地是已被轮换的旧令牌；
+3. 令牌带了空白/换行（用 `echo` 写文件会带换行，要用 `printf '%s'`）；
+4. 令牌被停用或删除。
+
+网关新版已把 401 翻译成 `TOKEN_INVALID_OR_WRONG_INSTANCE` 并直接给出上述指引；旧版网关返回裸的 `DS_API_ERROR 401`，语义相同。
+
+**各国差异、巴基斯坦的新版 DS、实测记录见 [COUNTRIES.md](COUNTRIES.md)。** 同一个动作在 A 国能用不代表在 B 国能用。
+
 
 常见补充：
 - `project_code`

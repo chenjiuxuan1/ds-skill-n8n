@@ -2,14 +2,18 @@
 
 ## 国家代码
 
-| 国家 | code |
-|---|---|
-| 中国 | `cn` |
-| 印尼 | `ine` |
-| 墨西哥 | `mx` |
-| 菲律宾 | `ph` |
-| 巴基斯坦 | `pk` |
-| 泰国 | `th` |
+| 国家 | code | DS API 形态 |
+|---|---|---|
+| 中国 | `cn` | 旧版 |
+| 印尼 | `ine` | 旧版 |
+| 墨西哥 | `mx` | 旧版 |
+| 菲律宾 | `ph` | 旧版 |
+| 巴基斯坦 | `pk` | **新版** |
+| 泰国 | `th` | 旧版 |
+
+令牌**按国家实例独立存储**：上表每一行都是一个独立的令牌池。巴基斯坦跑的是新版 DS（`workflowDefinitionCode` / `/executors/start-workflow-instance`），网关会按国家自动适配，但直连 DS 的自制脚本在 pk 会挂。详见 [COUNTRIES.md](COUNTRIES.md)。
+
+开工前先跑 `python3 scripts/ds_doctor.py --country <国家>` 确认令牌与链路。
 
 ## 标准 webhook body
 

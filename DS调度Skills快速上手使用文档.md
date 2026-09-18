@@ -2,15 +2,71 @@
 
 开发人员：陈江川
 
-更新时间：2026-06-25
+更新时间：2026-09-18
 
-本文面向使用者和 Codex 操作者，只说明 DS 调度 skill 的安装方式、n8n 中转链路、token 使用要求、常用动作和典型使用场景。更底层的接口字段、payload 结构和示例命令，请结合仓库中的 [README.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/README.md)、[REFERENCE.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/REFERENCE.md)、[EXAMPLES.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/EXAMPLES.md) 一起使用。
+本文面向使用者和 Codex 操作者，只说明 DS 调度 skill 的安装方式、n8n 中转链路、token 使用要求、常用动作和典型使用场景。更底层的接口字段、payload 结构和示例命令，请结合仓库中的 [README.md](README.md)、[REFERENCE.md](REFERENCE.md)、[EXAMPLES.md](EXAMPLES.md)、[COUNTRIES.md](COUNTRIES.md) 一起使用。
+
+## 0. 新用户上手（先读这一节）
+
+**第一次使用只需要三步，而且第 3 步之前不要做任何写操作。**
+
+### 第 1 步：拿到你自己国家的令牌
+
+到**目标国家自己的** DolphinScheduler 进入「安全中心 → 令牌管理 → 新建」，创建一个令牌。
+
+> ⚠️ **令牌按国家实例独立存储，互不相通。** cn 的令牌在 pk 的 DS 里根本不存在。这是最常踩的坑：拿别国令牌或过期令牌去调用，会收到一个 `DS 返回 401`，看起来像网关坏了，其实只是令牌不对。
+
+### 第 2 步：把令牌放到本机
+
+任选一种（优先级从高到低）：
+
+```bash
+# 方式 A（推荐）：按国家的约定路径
+printf '%s' '<你的令牌>' > ~/.config/codex-secrets/pk-dolphinscheduler-token
+chmod 600 ~/.config/codex-secrets/pk-dolphinscheduler-token
+
+# 方式 B：多国令牌集中配置
+cp config/ds-tokens.example.json config/ds-tokens.local.json
+# 编辑 config/ds-tokens.local.json 填入真实令牌（该文件已在 .gitignore 中）
+
+# 方式 C：临时用环境变量，不落盘
+export DS_TOKEN_PK='<你的令牌>'
+```
+
+⚠️ 写文件时用 `printf` 而不是 `echo`：`echo` 会追加一个换行，带着换行的令牌同样会得到 401。
+
+### 第 3 步：先跑 doctor，再干活
+
+```bash
+python3 scripts/ds_doctor.py --country pk
+```
+
+它会检查令牌能否解析、格式是否完好（换行 / 截断）、以及线上 webhook 是否接受它。**全部通过**再去执行真正的动作：
+
+```
+ds-scheduler doctor · pk
+
+  ✅ 解析令牌: 来源 ~/.config/codex-secrets/pk-dolphinscheduler-token，633c…0a，32 位
+  ✅ 令牌格式: 格式正常
+  ✅ 线上探测: 令牌有效，pk 链路完全打通（可读取到项目）
+
+✅ 全部通过，可以正常使用
+```
+
+如果 doctor 报错，它会给下一步该做什么；**不要**在 doctor 没过的情况下继续排查网关或路由。
+
+### 第一次写操作前
+
+先用你自己的测试项目验证，别直接在生产项目上试。确认方式是：建一个临时工作流 → 改一个无关紧要的字段 → 读回来确认 → 改回去。见 [COUNTRIES.md](COUNTRIES.md) 的「实测记录」。
 
 ## 1. Skills 套件概览
 
 当前维护仓库：
 
-`/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n`
+- skill（本仓库）：`https://github.com/chenjiuxuan1/ds-skill-n8n`
+- 网关：`https://github.com/chenjiuxuan1/ds-scheduler-gateway`（部署在各国跳板机 `/root/ds-scheduler-gateway`）
+
+本文件描述的所有相对路径（`scripts/`、`n8n/`、`config/`）都相对于**本 skill 的安装目录**。
 
 这个 skill 的核心目标不是“直接从 Codex 连 DolphinScheduler”，而是把用户的调度操作意图转换为标准 webhook 请求，再通过 n8n 分发到各国跳板机上的 `ds-scheduler-gateway` 执行。
 
@@ -162,6 +218,22 @@ mkdir -p ~/.codex/skills
 - token 决定用户能看到哪些项目
 - token 决定用户能操作哪些工作流
 - token 决定用户能不能上线、下线、触发、删除、重跑
+
+**而且 token 是「按国家实例」独立的**：每个国家的 DS 有自己的令牌表。所以同一个人在不同国家需要各自的令牌，共用一个 token 跨国家是不成立的。
+
+存放位置（任选一种，优先级从高到低）：
+
+| 方式 | 位置 | 适用 |
+|---|---|---|
+| 约定路径 | `~/.config/codex-secrets/<国家>-dolphinscheduler-token` | 日常单人使用 |
+| 集中配置 | `config/ds-tokens.local.json`（见 `config/ds-tokens.example.json`） | 需要跨多国操作 |
+| 环境变量 | `DS_TOKEN_<国家大写>` | 临时、不落盘 |
+
+验证是否可用：
+
+```bash
+python3 scripts/ds_doctor.py --country <国家>
+```
 
 ### 5.2 skill 和 n8n 不应内置共享 token
 
@@ -336,11 +408,26 @@ Codex 推荐固定动作：
 
 ### 9.1 为什么我能发请求，但查不到项目
 
-优先检查：
+**先跑 doctor，不要先怀疑网关：**
+
+```bash
+python3 scripts/ds_doctor.py --country <国家>
+```
+
+`list_projects` 报 `DS 返回 401`（或旧版网关的裸 `DS_API_ERROR 401`）时，**绝大多数情况是令牌问题，而不是网关、路由或请求格式的问题**。已知原因按概率排序：
+
+1. **令牌不是这个国家的。** DS 令牌按实例独立存储，cn 的令牌在 pk 的 DS 里不存在。请确认令牌是在**目标国家自己**的 DS「安全中心 → 令牌管理」创建的。
+2. **本地是旧令牌。** 令牌被轮换过，但本地文件里还是旧的副本。重新导出覆盖即可。
+3. **令牌带了空白/换行。** 用 `echo` 写文件会带上换行。用 `printf '%s'` 重写。
+4. **令牌被停用或删除。** 让对方或自己在令牌管理页面确认状态。
+
+其余的优先检查：
 
 - 传入的 `ds_token` 是否属于当前用户本人
-- token 是否具备目标项目权限
+- token 是否具备目标项目权限（这是 403，不是 401）
 - 国家是否选错
+
+如果 doctor 显示「令牌有效，链路完全打通」却仍然查不到项目，那才是权限或项目 code 的问题，此时再往下查。
 
 ### 9.2 为什么 n8n 返回成功，但页面没变化
 
@@ -362,11 +449,12 @@ Codex 推荐固定动作：
 
 配套建议一起看：
 
-- [SKILL.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/SKILL.md)
-- [README.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/README.md)
-- [REFERENCE.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/REFERENCE.md)
-- [EXAMPLES.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/EXAMPLES.md)
-- [n8n/README.md](/Users/jiangchuanchen/Desktop/codex使用/ds-skill-n8n/n8n/README.md)
+- [SKILL.md](SKILL.md)
+- [README.md](README.md)
+- [REFERENCE.md](REFERENCE.md)
+- [EXAMPLES.md](EXAMPLES.md)
+- [COUNTRIES.md](COUNTRIES.md) —— 各国差异、PK 的新版 DS、开工前检查
+- [n8n/README.md](n8n/README.md)
 
 如果后续需要，我可以继续补第二版文档：
 

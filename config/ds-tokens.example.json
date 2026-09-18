@@ -1,0 +1,12 @@
+{
+  "_comment": "本地私有的 DS 令牌配置。复制本文件为 config/ds-tokens.local.json（已在 .gitignore 中）再填入真实令牌，绝不要提交真实令牌。构建器用 --token-config config/ds-tokens.local.json 读取；值可以写成 ${ENV_VAR} 形式从环境变量取，这样令牌就不用落在磁盘上。",
+  "_token_help": "每个令牌必须来自对应国家自己的 DolphinScheduler。进入该系统「安全中心 → 令牌管理 → 新建」创建。DS 令牌按实例独立存储、互不相通：把 cn 的令牌填到 pk 里，pk 的 DS 会直接返回 401。",
+  "tokens": {
+    "cn": "${DS_TOKEN_CN}",
+    "ine": "${DS_TOKEN_INE}",
+    "mx": "${DS_TOKEN_MX}",
+    "ph": "${DS_TOKEN_PH}",
+    "pk": "${DS_TOKEN_PK}",
+    "th": "${DS_TOKEN_TH}"
+  }
+}

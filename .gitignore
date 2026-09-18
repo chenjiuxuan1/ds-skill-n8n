@@ -2,3 +2,9 @@
 
 __pycache__/
 *.pyc
+
+# Local secrets: real DS tokens must never be committed. The example file
+# (config/ds-tokens.example.json) is tracked; the filled-in copies are not.
+config/ds-tokens.local.json
+config/*.local.json
+config/ds-tokens.json
